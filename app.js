@@ -12,7 +12,6 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    // Drop list defaults strictly to founders Ken & Kate for secure setup
     return ["Ken", "Kate"];
 }
 
@@ -24,7 +23,7 @@ let state = {
     historicalLedger: {}, 
     currentUser: null,
     isShiftActive: false,
-    authMode: 'LOGIN', // Automatically adjusted to 'LOGIN' or 'SIGNUP' based on user selection state
+    authMode: 'LOGIN', 
     
     // Shift Data Buckets
     currentShiftSales: [],
@@ -63,6 +62,11 @@ const dom = {
     invQtyLabel: document.getElementById('inv-qty-label'),
     invQty: document.getElementById('inv-qty'),
     inventoryTableBody: document.getElementById('inventory-table-body'),
+
+    inventoryTabsItem: document.getElementById('tab-inventory'),
+    staffTabsItem: document.getElementById('tab-staff'),
+    overviewTabsItem: document.getElementById('tab-overview'),
+    salesTabsItem: document.getElementById('tab-sales'),
 
     staffForm: document.getElementById('staff-form'),
     staffName: document.getElementById('staff-name'),
@@ -113,16 +117,42 @@ function getActiveFormattedMonthKey() {
 
 // --- View Router Tab Control ---
 function switchMainTab(tabKey) {
-    Object.keys(dom.tabs).forEach(k => {
-        dom.tabs[k].className = "tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block";
-        dom.views[k].classList.add('hidden');
-    });
-    dom.tabs[tabKey].className = "tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition inline-block";
-    dom.views[tabKey].classList.remove('hidden');
-    state.activeTab = tabKey;
+    const tabElements = {
+        sales: dom.salesTabsItem,
+        inventory: dom.inventoryTabsItem,
+        staff: dom.staffTabsItem,
+        overview: dom.overviewTabsItem
+    };
 
+    const viewElements = {
+        sales: document.getElementById('view-sales'),
+        inventory: document.getElementById('view-inventory'),
+        staff: document.getElementById('view-staff'),
+        overview: document.getElementById('view-overview')
+    };
+
+    Object.keys(tabElements).forEach(k => {
+        if (tabElements[k]) {
+            tabElements[k].className = "tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block";
+        }
+        if (viewElements[k]) {
+            viewElements[k].classList.add('hidden');
+        }
+    });
+
+    if (tabElements[tabKey]) {
+        tabElements[tabKey].className = "tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition inline-block";
+    }
+    if (viewElements[tabKey]) {
+        viewElements[tabKey].classList.remove('hidden');
+    }
+    
+    state.activeTab = tabKey;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (tabKey === 'overview') renderAnalyticsViewport();
+    
+    if (tabKey === 'overview') {
+        renderAnalyticsViewport();
+    }
 }
 
 // --- Render Operations Tables ---
@@ -145,7 +175,7 @@ function updateInventoryUI() {
             <td class="p-3 text-right font-bold ${itemQty < 5 ? 'text-rose-600 bg-rose-50':'text-gray-700'}">${itemQty} units</td>
             <td class="p-3 text-right">
                 <button class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded transition border border-rose-200" onclick="deleteInventoryItem('${item.id}')">
-                    🗑️
+                    🗑====
                 </button>
             </td>
         `;
@@ -208,13 +238,11 @@ function updateStaffAndLoginUI() {
     dom.loginUsername.innerHTML = '';
 
     state.staff.forEach(name => {
-        // Hydrate landing profile selector option list
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
         dom.loginUsername.appendChild(option);
 
-        // Hydrate master profile control matrix table view
         const hasPassSet = state.passwords[name] ? "🔒 Profile Registered" : "⚠️ Unset (First Time Registration Needed)";
         const badgeColor = state.passwords[name] ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50";
 
@@ -225,7 +253,7 @@ function updateStaffAndLoginUI() {
             <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-xs ${badgeColor}">${hasPassSet}</span></td>
             <td class="p-3 text-right">
                 <button class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded transition border border-rose-200" onclick="deleteStaffMember('${name}')">
-                    🗑️ Remove
+                    🗑 Remove
                 </button>
             </td>
         `;
@@ -235,13 +263,11 @@ function updateStaffAndLoginUI() {
     handleLandingUserSelectionChange();
 }
 
-// FIXED SIGNUP TRACKER FLOW: Watches user choice on login wall, switching form behavior dynamically
 function handleLandingUserSelectionChange() {
     const targetUser = dom.loginUsername.value;
     if (!targetUser) return;
 
     if (state.passwords[targetUser]) {
-        // Password registered on file
         state.authMode = 'LOGIN';
         dom.authBadge.textContent = "Shift Login Mode";
         dom.authBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700";
@@ -249,7 +275,6 @@ function handleLandingUserSelectionChange() {
         dom.btnAuthSubmit.textContent = "Verify & Clock In";
         dom.btnAuthSubmit.className = "w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-3 rounded-xl transition text-sm shadow-md";
     } else {
-        // Password unset
         state.authMode = 'SIGNUP';
         dom.authBadge.textContent = "First-Time Registration Mode";
         dom.authBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-700";
@@ -300,7 +325,7 @@ function updateSalesAndExpensesUI() {
     dom.statCurrentNetProfit.textContent = `$${state.currentNetProfitTotal.toFixed(2)}`;
 }
 
-// --- Analytics Engine Data Tables Processing Pipelines ---
+// --- Analytics Engine Functional Viewport Routines ---
 function switchAnalyticsSection(sectionKey) {
     state.activeAnalyticsSection = sectionKey;
     renderAnalyticsViewport();
@@ -395,13 +420,13 @@ function renderAnalyticsViewport() {
     }
 }
 
-dom.anBtnStaff.addEventListener('click', () => switchAnalyticsSection('staff'));
-dom.anBtnMonthly.addEventListener('click', () => switchAnalyticsSection('monthly'));
-dom.anBtnStock.addEventListener('click', () => switchAnalyticsSection('stock'));
-dom.anBtnOut.addEventListener('click', () => switchAnalyticsSection('out'));
-dom.anBtnPerformance.addEventListener('click', () => switchAnalyticsSection('performance'));
+// --- Dynamic Event Wiring Pipelines ---
+dom.salesTabsItem.addEventListener('click', () => switchMainTab('sales'));
+dom.inventoryTabsItem.addEventListener('click', () => switchMainTab('inventory'));
+dom.staffTabsItem.addEventListener('click', () => switchMainTab('staff'));
+dom.overviewTabsItem.addEventListener('click', () => switchMainTab('overview'));
 
-// --- Unified Authentication Submission Routine ---
+// --- Authentication Engine Flow Logic ---
 dom.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     dom.authError.classList.add('hidden');
@@ -411,10 +436,9 @@ dom.loginForm.addEventListener('submit', async (e) => {
     
     if (!selectedUser) return;
 
-    // Phase 1: If current user profile has no password, initialize registration
     if (state.authMode === 'SIGNUP') {
         if (plaintextPass.length < 4) {
-            dom.authError.textContent = "❌ Security Error: Password must be at least 4 characters long.";
+            dom.authError.textContent = "❌ Safety Error: Password must be at least 4 characters long.";
             dom.authError.classList.remove('hidden');
             return;
         }
@@ -427,7 +451,6 @@ dom.loginForm.addEventListener('submit', async (e) => {
         state.authMode = 'LOGIN'; 
     }
 
-    // Phase 2: Run verification checks
     const hashedCheck = await generateSHA256(plaintextPass);
     const validStoredHash = state.passwords[selectedUser];
 
@@ -448,7 +471,6 @@ dom.loginForm.addEventListener('submit', async (e) => {
         dom.appWorkspace.classList.remove('hidden');
         dom.appWorkspace.classList.add('flex');
 
-        // Enforce Global Visibility Matrices based on roles
         if (state.currentUser === "Ken") {
             dom.btnMasterReset.classList.remove('hidden');
             dom.staffWorkspaceWrapper.classList.remove('hidden');
@@ -471,7 +493,7 @@ dom.loginForm.addEventListener('submit', async (e) => {
         updateSalesAndExpensesUI();
         switchMainTab('sales');
     } else {
-        dom.authError.textContent = "❌ Invalid verification password. Please try again.";
+        dom.authError.textContent = "❌ Invalid password provided. Please try again.";
         dom.authError.classList.remove('hidden');
         dom.loginPassword.value = "";
     }
@@ -496,9 +518,14 @@ dom.btnClockOut.addEventListener('click', () => {
         dom.appWorkspace.classList.add('hidden');
         dom.appWorkspace.classList.remove('flex');
         dom.loginWall.classList.remove('hidden');
-        dom.loginError.classList.add('hidden');
+        dom.authError.classList.add('hidden');
         
-        updateStaffAndLoginUI();
+        // Reset login interface parameters
+        state.authMode = 'LOGIN';
+        dom.authSubtitle.textContent = "Employee Shift Clock In";
+        dom.btnAuthSubmit.textContent = "Verify & Clock In";
+        
+        initializeApplication();
     }
 });
 
@@ -521,7 +548,7 @@ dom.inventoryForm.addEventListener('submit', (e) => {
         const index = state.inventory.findIndex(i => i.id === actionValue);
         if (index !== -1) {
             state.inventory[index].qty += inputQty;
-            state.inventory[index].buyingPrice = inputPrice; 
+            state.inventory[index].buyingPrice = inputPrice;
         }
     }
     localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
