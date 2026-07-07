@@ -11,22 +11,46 @@ function getInitialInventory() {
     ];
 }
 
-function getInitialStaff() {
-    return ["Kate", "Ken", "Ryan", "Faith"];
+/**
+ * Denlight - Advanced Enterprise Dashboard Storage Engine Architecture
+ */
+
+// --- Persistent Application Engine LocalStorage Defaults ---
+function getInitialInventory() {
+    return [
+        { id: "1", name: "Anker USB-C Hub", buyingPrice: 15.00, qty: 25, soldVolume: 0 },
+        { id: "2", name: "Logitech MX Master 3S", buyingPrice: 65.00, qty: 10, soldVolume: 0 },
+        { id: "3", name: "iPhone 15 Matte Case", buyingPrice: 4.50, qty: 50, soldVolume: 0 }
+    ];
 }
 
-// Default Password Hash Value for "denlight2026"
-const DEFAULT_PASSWORD_HASH = "8ba7b04e287ffdbb770f7bb00388147d197607a9be3bfa7585a73041f021e5f0";
+function getInitialStaff() {
+    return ["Ken", "Kate", "Ryan", "Faith"];
+}
 
+// Fixed Security Bootstrapping: Auto-generates exact SHA-256 alignment
 if (!localStorage.getItem('denlight_inventory')) {
     localStorage.setItem('denlight_inventory', JSON.stringify(getInitialInventory()));
 }
 if (!localStorage.getItem('denlight_staff')) {
     localStorage.setItem('denlight_staff', JSON.stringify(getInitialStaff()));
 }
-if (!localStorage.getItem('denlight_secure_hash')) {
-    localStorage.setItem('denlight_secure_hash', DEFAULT_PASSWORD_HASH);
+
+// Crypto Utility Function needed upfront for bootstrapping
+async function generateSHA256(plainText) {
+    const msgBuffer = new TextEncoder().encode(plainText);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+// Dynamically sets standard 'denlight2026' password safely based on your browser environment
+(async () => {
+    if (!localStorage.getItem('denlight_secure_hash')) {
+        const defaultHash = await generateSHA256("denlight2026");
+        localStorage.setItem('denlight_secure_hash', defaultHash);
+    }
+})();
 
 // --- Global Application Data Runtime States ---
 let state = {
