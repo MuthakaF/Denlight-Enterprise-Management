@@ -1,8 +1,9 @@
 /**
  * Denlight - Advanced Enterprise Dashboard Storage Engine Architecture
+ * Complete Operational Core Engine Build
  */
 
-// --- Persistent Data Baseline Initializations ---
+// --- Persistent Data Object Baseline Templates ---
 function getInitialInventory() {
     return [
         { id: "1", name: "Anker USB-C Hub", buyingPrice: 15.00, qty: 25, soldVolume: 0 },
@@ -12,7 +13,7 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    return ["Ken", "Kate"];
+    return ["Ken", "Kate", "Ryan", "Faith"];
 }
 
 // --- Global Application Runtime States ---
@@ -175,7 +176,7 @@ function updateInventoryUI() {
             <td class="p-3 text-right font-bold ${itemQty < 5 ? 'text-rose-600 bg-rose-50':'text-gray-700'}">${itemQty} units</td>
             <td class="p-3 text-right">
                 <button class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded transition border border-rose-200" onclick="deleteInventoryItem('${item.id}')">
-                    🗑====
+                    🗑️
                 </button>
             </td>
         `;
@@ -253,7 +254,7 @@ function updateStaffAndLoginUI() {
             <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-xs ${badgeColor}">${hasPassSet}</span></td>
             <td class="p-3 text-right">
                 <button class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded transition border border-rose-200" onclick="deleteStaffMember('${name}')">
-                    🗑 Remove
+                    🗑️ Remove
                 </button>
             </td>
         `;
@@ -471,16 +472,23 @@ dom.loginForm.addEventListener('submit', async (e) => {
         dom.appWorkspace.classList.remove('hidden');
         dom.appWorkspace.classList.add('flex');
 
+        // Manage Master Admin purges parameters controls
         if (state.currentUser === "Ken") {
             dom.btnMasterReset.classList.remove('hidden');
+        } else {
+            dom.btnMasterReset.classList.add('hidden');
+        }
+
+        // Manage Staffing adjustments tabs authorizations checks
+        if (state.currentUser === "Ken" || state.currentUser === "Kate") {
             dom.staffWorkspaceWrapper.classList.remove('hidden');
             dom.staffLockNotice.classList.add('hidden');
         } else {
-            dom.btnMasterReset.classList.add('hidden');
             dom.staffWorkspaceWrapper.classList.add('hidden');
             dom.staffLockNotice.classList.remove('hidden');
         }
 
+        // Manage Warehouse modification controls clearances rules
         if (state.currentUser === "Ken" || state.currentUser === "Kate") {
             dom.inventoryControlBox.classList.remove('opacity-40', 'pointer-events-none');
             dom.inventoryLockNotice.classList.add('hidden');
@@ -520,7 +528,6 @@ dom.btnClockOut.addEventListener('click', () => {
         dom.loginWall.classList.remove('hidden');
         dom.authError.classList.add('hidden');
         
-        // Reset login interface parameters
         state.authMode = 'LOGIN';
         dom.authSubtitle.textContent = "Employee Shift Clock In";
         dom.btnAuthSubmit.textContent = "Verify & Clock In";
@@ -558,10 +565,11 @@ dom.inventoryForm.addEventListener('submit', (e) => {
     handleInventoryActionDropdownState();
 });
 
+// APPENDED REVISION: Authorizes both Ken & Kate to add employee rows dynamically
 dom.staffForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (state.currentUser !== "Ken") {
-        alert("🔒 Access Denied: Only Ken can onboard staff profiles.");
+    if (state.currentUser !== "Ken" && state.currentUser !== "Kate") {
+        alert("🔒 Access Denied: Only Ken or Kate can onboard staff profiles.");
         return;
     }
     const cleanName = dom.staffName.value.trim();
@@ -618,7 +626,7 @@ dom.btnMasterReset.addEventListener('click', () => {
         if (step2) {
             localStorage.clear();
             initializeApplication();
-            alert("Database successfully purged back to template stock defaults.");
+            alert("Database successfully purged back to template defaults.");
         }
     }
 });
