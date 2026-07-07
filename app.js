@@ -2,7 +2,7 @@
  * Denlight - Advanced Enterprise Dashboard Storage Engine Architecture
  */
 
-// --- Persistent Data Object Baseline Templates ---
+// --- Persistent Data Baseline Initializations ---
 function getInitialInventory() {
     return [
         { id: "1", name: "Anker USB-C Hub", buyingPrice: 15.00, qty: 25, soldVolume: 0 },
@@ -12,20 +12,21 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    return ["Ken", "Kate", "Ryan", "Faith"];
+    // Drop list defaults strictly to founders Ken & Kate for secure setup
+    return ["Ken", "Kate"];
 }
 
-// --- Global Application Data Runtime State Engine ---
+// --- Global Application Runtime States ---
 let state = {
     inventory: [],
     staff: [],
-    passwords: {}, // Maps employee name -> SHA-256 password hash
+    passwords: {}, 
     historicalLedger: {}, 
     currentUser: null,
     isShiftActive: false,
-    authMode: 'LOGIN', // 'LOGIN' or 'SIGNUP'
+    authMode: 'LOGIN', // Automatically adjusted to 'LOGIN' or 'SIGNUP' based on user selection state
     
-    // Active Shift Aggregation Metrics
+    // Shift Data Buckets
     currentShiftSales: [],
     currentShiftExpenses: [],
     currentSalesProfitTotal: 0.00,
@@ -39,13 +40,13 @@ let state = {
 // --- DOM Cache Target Selectors ---
 const dom = {
     loginWall: document.getElementById('login-wall'),
-    authSubtitle: document.getElementById('auth-subtitle'),
+    authBadge: document.getElementById('auth-badge'),
     loginForm: document.getElementById('login-form'),
     loginUsername: document.getElementById('login-username'),
     loginPassword: document.getElementById('login-password'),
+    passwordInputLabel: document.getElementById('password-input-label'),
     authError: document.getElementById('auth-error'),
     btnAuthSubmit: document.getElementById('btn-auth-submit'),
-    btnToggleAuthMode: document.getElementById('btn-toggle-auth-mode'),
     
     appWorkspace: document.getElementById('app-workspace'),
     activeUserBadge: document.getElementById('active-user-badge'),
@@ -66,6 +67,8 @@ const dom = {
     staffForm: document.getElementById('staff-form'),
     staffName: document.getElementById('staff-name'),
     staffTableBody: document.getElementById('staff-table-body'),
+    staffWorkspaceWrapper: document.getElementById('staff-workspace-wrapper'),
+    staffLockNotice: document.getElementById('staff-lock-notice'),
     
     salesForm: document.getElementById('sales-form'),
     saleItemSelect: document.getElementById('sale-item-select'),
@@ -94,7 +97,7 @@ const dom = {
     analyticsTableBody: document.getElementById('analytics-table-body')
 };
 
-// --- Utilities Cryptography Engines (SHA-256) ---
+// --- Cryptography Engines (SHA-256) ---
 async function generateSHA256(plainText) {
     const msgBuffer = new TextEncoder().encode(plainText);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -108,7 +111,7 @@ function getActiveFormattedMonthKey() {
     return `${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-// --- View Router Control Swapping Engine ---
+// --- View Router Tab Control ---
 function switchMainTab(tabKey) {
     Object.keys(dom.tabs).forEach(k => {
         dom.tabs[k].className = "tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block";
@@ -122,7 +125,7 @@ function switchMainTab(tabKey) {
     if (tabKey === 'overview') renderAnalyticsViewport();
 }
 
-// --- Core Table Render Drivers ---
+// --- Render Operations Tables ---
 function updateInventoryUI() {
     dom.inventoryTableBody.innerHTML = '';
     dom.saleItemSelect.innerHTML = '<option value="">-- Choose Stock --</option>';
@@ -205,12 +208,14 @@ function updateStaffAndLoginUI() {
     dom.loginUsername.innerHTML = '';
 
     state.staff.forEach(name => {
+        // Hydrate landing profile selector option list
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
         dom.loginUsername.appendChild(option);
 
-        const hasPassSet = state.passwords[name] ? "🔒 Set" : "⚠️ Unset (Needs Registration)";
+        // Hydrate master profile control matrix table view
+        const hasPassSet = state.passwords[name] ? "🔒 Profile Registered" : "⚠️ Unset (First Time Registration Needed)";
         const badgeColor = state.passwords[name] ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50";
 
         const row = document.createElement('tr');
@@ -226,15 +231,42 @@ function updateStaffAndLoginUI() {
         `;
         dom.staffTableBody.appendChild(row);
     });
+
+    handleLandingUserSelectionChange();
 }
+
+// FIXED SIGNUP TRACKER FLOW: Watches user choice on login wall, switching form behavior dynamically
+function handleLandingUserSelectionChange() {
+    const targetUser = dom.loginUsername.value;
+    if (!targetUser) return;
+
+    if (state.passwords[targetUser]) {
+        // Password registered on file
+        state.authMode = 'LOGIN';
+        dom.authBadge.textContent = "Shift Login Mode";
+        dom.authBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700";
+        dom.passwordInputLabel.textContent = "Enter Password to Clock In";
+        dom.btnAuthSubmit.textContent = "Verify & Clock In";
+        dom.btnAuthSubmit.className = "w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-3 rounded-xl transition text-sm shadow-md";
+    } else {
+        // Password unset
+        state.authMode = 'SIGNUP';
+        dom.authBadge.textContent = "First-Time Registration Mode";
+        dom.authBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-700";
+        dom.passwordInputLabel.textContent = `Set a New Password for ${targetUser}`;
+        dom.btnAuthSubmit.textContent = "Register Profile Password";
+        dom.btnAuthSubmit.className = "w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-3 rounded-xl transition text-sm shadow-md";
+    }
+}
+dom.loginUsername.addEventListener('change', handleLandingUserSelectionChange);
 
 window.deleteStaffMember = function(name) {
     if (state.currentUser !== "Ken") {
         alert("🔒 Access Denied: Only Ken can delete staff entries.");
         return;
     }
-    if (name === "Ken") {
-        alert("Action Aborted: The master admin profile cannot be deleted.");
+    if (name === "Ken" || name === "Kate") {
+        alert("Action Aborted: Structural corporate administrative profiles cannot be removed.");
         return;
     }
     if (confirm(`Remove ${name} from active directories?`)) {
@@ -268,7 +300,12 @@ function updateSalesAndExpensesUI() {
     dom.statCurrentNetProfit.textContent = `$${state.currentNetProfitTotal.toFixed(2)}`;
 }
 
-// --- Analytics Engine Functional Viewport Routines ---
+// --- Analytics Engine Data Tables Processing Pipelines ---
+function switchAnalyticsSection(sectionKey) {
+    state.activeAnalyticsSection = sectionKey;
+    renderAnalyticsViewport();
+}
+
 function renderAnalyticsViewport() {
     dom.analyticsTableHead.innerHTML = '';
     dom.analyticsTableBody.innerHTML = '';
@@ -317,7 +354,7 @@ function renderAnalyticsViewport() {
         state.inventory.forEach(item => {
             const qtyLeft = parseInt(item.qty);
             let statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-bold">In Stock</span>`;
-            if (qtyLeft === 0) statusBadge = `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded font-bold">Out of Stock</span>`;
+            if (qtyLeft === 0) statusBadge = `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded font-bold">Empty</span>`;
             else if (qtyLeft < 5) statusBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">Low</span>`;
             
             const row = document.createElement('tr');
@@ -358,33 +395,13 @@ function renderAnalyticsViewport() {
     }
 }
 
-// --- Dynamic Event Wiring Pipelines ---
-Object.keys(dom.tabs).forEach(key => { dom.tabs[key].addEventListener('click', () => switchMainTab(key)); });
 dom.anBtnStaff.addEventListener('click', () => switchAnalyticsSection('staff'));
 dom.anBtnMonthly.addEventListener('click', () => switchAnalyticsSection('monthly'));
 dom.anBtnStock.addEventListener('click', () => switchAnalyticsSection('stock'));
 dom.anBtnOut.addEventListener('click', () => switchAnalyticsSection('out'));
 dom.anBtnPerformance.addEventListener('click', () => switchAnalyticsSection('performance'));
 
-// --- Authentication Mode Logic Switcher ---
-dom.btnToggleAuthMode.addEventListener('click', () => {
-    dom.authError.classList.add('hidden');
-    dom.loginPassword.value = "";
-    
-    if (state.authMode === 'LOGIN') {
-        state.authMode = 'SIGNUP';
-        dom.authSubtitle.textContent = "Create Private Employee Password";
-        dom.btnAuthSubmit.textContent = "Register Secure Password";
-        dom.btnToggleAuthMode.textContent = "Already have a profile set up? Access Clock In →";
-    } else {
-        state.authMode = 'LOGIN';
-        dom.authSubtitle.textContent = "Employee Shift Clock In";
-        dom.btnAuthSubmit.textContent = "Verify & Clock In";
-        dom.btnToggleAuthMode.textContent = "First time logging in? Create your password profile →";
-    }
-});
-
-// --- Unified Form Submit Interceptor Router (Handles registration vs verification) ---
+// --- Unified Authentication Submission Routine ---
 dom.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     dom.authError.classList.add('hidden');
@@ -394,17 +411,10 @@ dom.loginForm.addEventListener('submit', async (e) => {
     
     if (!selectedUser) return;
 
+    // Phase 1: If current user profile has no password, initialize registration
     if (state.authMode === 'SIGNUP') {
-        // Enforce character requirements
         if (plaintextPass.length < 4) {
-            dom.authError.textContent = "❌ Safety Error: Password must be at least 4 characters long.";
-            dom.authError.classList.remove('hidden');
-            return;
-        }
-        
-        // Block overwriting existing setups
-        if (state.passwords[selectedUser]) {
-            dom.authError.textContent = `❌ Reg Error: ${selectedUser} already has an active password profile set.`;
+            dom.authError.textContent = "❌ Security Error: Password must be at least 4 characters long.";
             dom.authError.classList.remove('hidden');
             return;
         }
@@ -413,19 +423,13 @@ dom.loginForm.addEventListener('submit', async (e) => {
         state.passwords[selectedUser] = hashed;
         localStorage.setItem('denlight_passwords', JSON.stringify(state.passwords));
         
-        alert(`Password created for ${selectedUser}! Clocking you in automatically...`);
-        state.authMode = 'LOGIN'; // Route safely back into standard initialization loop
+        alert(`Password profile created successfully for ${selectedUser}! Logging in...`);
+        state.authMode = 'LOGIN'; 
     }
 
-    // Process standard workspace clock-in authentication
+    // Phase 2: Run verification checks
     const hashedCheck = await generateSHA256(plaintextPass);
     const validStoredHash = state.passwords[selectedUser];
-
-    if (!validStoredHash) {
-        dom.authError.textContent = "⚠️ This user profile has no password created yet. Choose 'Create Profile' below.";
-        dom.authError.classList.remove('hidden');
-        return;
-    }
 
     if (hashedCheck === validStoredHash) {
         state.currentUser = selectedUser;
@@ -444,14 +448,17 @@ dom.loginForm.addEventListener('submit', async (e) => {
         dom.appWorkspace.classList.remove('hidden');
         dom.appWorkspace.classList.add('flex');
 
-        // Manage Role Clearances (Only Ken sees reset buttons)
+        // Enforce Global Visibility Matrices based on roles
         if (state.currentUser === "Ken") {
             dom.btnMasterReset.classList.remove('hidden');
+            dom.staffWorkspaceWrapper.classList.remove('hidden');
+            dom.staffLockNotice.classList.add('hidden');
         } else {
             dom.btnMasterReset.classList.add('hidden');
+            dom.staffWorkspaceWrapper.classList.add('hidden');
+            dom.staffLockNotice.classList.remove('hidden');
         }
 
-        // Manage Stock Room Lock Clearances (Only Ken and Kate can submit)
         if (state.currentUser === "Ken" || state.currentUser === "Kate") {
             dom.inventoryControlBox.classList.remove('opacity-40', 'pointer-events-none');
             dom.inventoryLockNotice.classList.add('hidden');
@@ -464,7 +471,7 @@ dom.loginForm.addEventListener('submit', async (e) => {
         updateSalesAndExpensesUI();
         switchMainTab('sales');
     } else {
-        dom.authError.textContent = "❌ Invalid password provided. Please try again.";
+        dom.authError.textContent = "❌ Invalid verification password. Please try again.";
         dom.authError.classList.remove('hidden');
         dom.loginPassword.value = "";
     }
@@ -489,23 +496,17 @@ dom.btnClockOut.addEventListener('click', () => {
         dom.appWorkspace.classList.add('hidden');
         dom.appWorkspace.classList.remove('flex');
         dom.loginWall.classList.remove('hidden');
-        dom.authError.classList.add('hidden');
+        dom.loginError.classList.add('hidden');
         
-        // Reset login mode interface
-        state.authMode = 'LOGIN';
-        dom.authSubtitle.textContent = "Employee Shift Clock In";
-        dom.btnAuthSubmit.textContent = "Verify & Clock In";
-        dom.btnToggleAuthMode.textContent = "First time logging in? Create your password profile →";
-        
-        initializeApplication();
+        updateStaffAndLoginUI();
     }
 });
 
-// --- Operational Mutation Handlers ---
+// --- Standard Catalog Input Logic Handlers ---
 dom.inventoryForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (state.currentUser !== "Ken" && state.currentUser !== "Kate") {
-        alert("🔒 Access Denied: Insufficient data clearances.");
+        alert("🔒 Access Denied: Insufficient operational clearances.");
         return;
     }
 
@@ -520,7 +521,7 @@ dom.inventoryForm.addEventListener('submit', (e) => {
         const index = state.inventory.findIndex(i => i.id === actionValue);
         if (index !== -1) {
             state.inventory[index].qty += inputQty;
-            state.inventory[index].buyingPrice = inputPrice; // Updates buying prices for future operations only
+            state.inventory[index].buyingPrice = inputPrice; 
         }
     }
     localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
@@ -533,7 +534,7 @@ dom.inventoryForm.addEventListener('submit', (e) => {
 dom.staffForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (state.currentUser !== "Ken") {
-        alert("🔒 Access Denied: Only Ken can onboard names.");
+        alert("🔒 Access Denied: Only Ken can onboard staff profiles.");
         return;
     }
     const cleanName = dom.staffName.value.trim();
@@ -552,7 +553,7 @@ dom.salesForm.addEventListener('submit', (e) => {
     if (itemIndex === -1 || state.inventory[itemIndex].qty <= 0) return;
 
     const item = state.inventory[itemIndex];
-    const calculatedProfit = soldPrice - item.buyingPrice; // Captures base cost at the immutable split-second of sale
+    const calculatedProfit = soldPrice - item.buyingPrice;
 
     state.inventory[itemIndex].qty -= 1;
     state.inventory[itemIndex].soldVolume = (state.inventory[itemIndex].soldVolume || 0) + 1;
