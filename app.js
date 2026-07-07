@@ -1,9 +1,8 @@
 /**
- * Denlight - Advanced Enterprise Dashboard Storage Engine Architecture
- * Full Corrected Application Core Logic
+ * Denlight - Secure Enterprise Dashboard Storage Engine Architecture
  */
 
-// --- Persistent Application Engine Base Configurations ---
+// --- Persistent Data Object Defaults Engines ---
 function getInitialInventory() {
     return [
         { id: "1", name: "Anker USB-C Hub", buyingPrice: 15.00, qty: 25, soldVolume: 0 },
@@ -13,33 +12,32 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    return ["Alex", "Jordan", "Taylor", "Morgan"];
+    return ["Ken", "Kate", "Ryan", "Faith"];
 }
 
 const DEFAULT_PASSWORD_PLAIN = "denlight2026";
 
-// --- Global Application Data Runtime State ---
+// --- Global Application Data Runtime State Engine ---
 let state = {
     inventory: [],
     staff: [],
+    historicalLedger: {}, // Month-wise grouped historical ledger
     currentUser: null,
     isShiftActive: false,
     
-    // Shift Data Bucket Vectors
+    // Active Shift Aggregations Buckets
     currentShiftSales: [],
     currentShiftExpenses: [],
     currentSalesProfitTotal: 0.00,
     currentExpensesTotal: 0.00,
     currentNetProfitTotal: 0.00,
     
-    // Active Screen Tab Trackers
     activeTab: 'sales',
     activeAnalyticsSection: 'staff'
 };
 
-// --- DOM Cache System Selectors ---
+// --- DOM Cache Target Selectors ---
 const dom = {
-    // Auth Layer UI Controls
     loginWall: document.getElementById('login-wall'),
     loginForm: document.getElementById('login-form'),
     loginUsername: document.getElementById('login-username'),
@@ -66,6 +64,8 @@ const dom = {
     btnMasterReset: document.getElementById('btn-master-reset'),
     
     inventoryForm: document.getElementById('inventory-form'),
+    inventoryControlBox: document.getElementById('inventory-control-box'),
+    inventoryLockNotice: document.getElementById('inventory-lock-notice'),
     invActionSelect: document.getElementById('inv-action-select'),
     invNameContainer: document.getElementById('inv-name-container'),
     invName: document.getElementById('inv-name'),
@@ -95,6 +95,7 @@ const dom = {
     statCurrentNetProfit: document.getElementById('stat-current-net-profit'),
     
     anBtnStaff: document.getElementById('an-btn-staff'),
+    anBtnMonthly: document.getElementById('an-btn-monthly'),
     anBtnStock: document.getElementById('an-btn-stock'),
     anBtnOut: document.getElementById('an-btn-out'),
     anBtnPerformance: document.getElementById('an-btn-performance'),
@@ -104,7 +105,7 @@ const dom = {
     analyticsTableBody: document.getElementById('analytics-table-body')
 };
 
-// --- Crypto Verification Hashing Utilities (SHA-256) ---
+// --- Utilities Cryptography Engines (SHA-256) ---
 async function generateSHA256(plainText) {
     const msgBuffer = new TextEncoder().encode(plainText);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -112,7 +113,13 @@ async function generateSHA256(plainText) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// --- View Router Control Switches Engine Routines ---
+function getActiveFormattedMonthKey() {
+    const date = new Date();
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+// --- View Router Control Swapping Engine ---
 function switchMainTab(tabKey) {
     Object.keys(dom.tabs).forEach(k => {
         dom.tabs[k].className = "tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block";
@@ -126,7 +133,7 @@ function switchMainTab(tabKey) {
     if (tabKey === 'overview') renderAnalyticsViewport();
 }
 
-// --- Dynamic Table Data Rendering Pipelines ---
+// --- Render Layout Interfaces Pipelines ---
 function updateInventoryUI() {
     dom.inventoryTableBody.innerHTML = '';
     dom.saleItemSelect.innerHTML = '<option value="">-- Choose Stock --</option>';
@@ -139,11 +146,11 @@ function updateInventoryUI() {
         if (parseInt(item.qty) === 0) outOfStockCounter++;
 
         const row = document.createElement('tr');
-        row.className = "hover:bg-gray-50 text-gray-700 font-medium transition";
+        row.className = "hover:bg-gray-50 text-gray-700 text-sm transition";
         row.innerHTML = `
             <td class="p-3 font-semibold text-gray-900 break-all">${item.name}</td>
             <td class="p-3 text-right text-gray-500">$${item.buyingPrice.toFixed(2)}</td>
-            <td class="p-3 text-right font-bold ${item.qty < 5 ? 'text-rose-600 bg-rose-50':'text-gray-700'}">${item.qty} u</td>
+            <td class="p-3 text-right font-bold ${item.qty < 5 ? 'text-rose-600 bg-rose-50':'text-gray-700'}">${item.qty} units</td>
             <td class="p-3 text-right">
                 <button class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded transition border border-rose-200" onclick="deleteInventoryItem('${item.id}')">
                     🗑️
@@ -155,7 +162,7 @@ function updateInventoryUI() {
         if (item.qty > 0) {
             const option = document.createElement('option');
             option.value = item.id;
-            option.textContent = `${item.name} (${item.qty})`;
+            option.textContent = `${item.name} (Cost: $${item.buyingPrice.toFixed(2)})`;
             dom.saleItemSelect.appendChild(option);
         }
 
@@ -181,7 +188,7 @@ function handleInventoryActionDropdownState() {
     } else {
         dom.invNameContainer.classList.add('hidden');
         dom.invName.required = false;
-        dom.invQtyLabel.textContent = "Additional Quantity to Add";
+        dom.invQtyLabel.textContent = "Additional Restock Quantity";
         
         const targetItem = state.inventory.find(i => i.id === selectedValue);
         if (targetItem) {
@@ -192,6 +199,10 @@ function handleInventoryActionDropdownState() {
 }
 
 window.deleteInventoryItem = function(id) {
+    if (state.currentUser !== "Ken") {
+        alert("🔒 Access Denied: Only Ken can delete items from database catalogs.");
+        return;
+    }
     if (confirm("Remove this item from the Denlight database?")) {
         state.inventory = state.inventory.filter(item => item.id !== id);
         localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
@@ -211,7 +222,7 @@ function updateStaffAndLoginUI() {
         dom.loginUsername.appendChild(option);
 
         const row = document.createElement('tr');
-        row.className = "hover:bg-gray-50 text-gray-700 font-semibold transition";
+        row.className = "hover:bg-gray-50 text-gray-700 font-semibold text-sm transition";
         row.innerHTML = `
             <td class="p-3 text-slate-900">${name}</td>
             <td class="p-3 text-right">
@@ -224,14 +235,23 @@ function updateStaffAndLoginUI() {
     });
 }
 
-window.deleteStaffMember = function(name) {
+function deleteStaffMember(name) {
+    if (state.currentUser !== "Ken") {
+        alert("🔒 Access Denied: Only Ken can modify staff profiles.");
+        return;
+    }
+    if (name === "Ken") {
+        alert("Action Aborted: The master profile administrator cannot be deleted.");
+        return;
+    }
     if (confirm(`Remove ${name} from active store registers?`)) {
         state.staff = state.staff.filter(member => member !== name);
         localStorage.setItem('denlight_staff', JSON.stringify(state.staff));
         updateStaffAndLoginUI();
         if (state.activeTab === 'overview') renderAnalyticsViewport();
     }
-};
+}
+window.deleteStaffMember = deleteStaffMember;
 
 function updateSalesAndExpensesUI() {
     dom.salesTableBody.innerHTML = '';
@@ -255,26 +275,21 @@ function updateSalesAndExpensesUI() {
 }
 
 // --- Analytics Viewport Engine ---
-function switchAnalyticsSection(sectionKey) {
-    const buttons = { staff: dom.anBtnStaff, stock: dom.anBtnStock, out: dom.anBtnOut, performance: dom.anBtnPerformance };
-    Object.keys(buttons).forEach(k => { buttons[k].className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate"; });
-    dom.anBtnOut.className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate";
-
-    if (sectionKey === 'staff') dom.anBtnStaff.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
-    if (sectionKey === 'stock') dom.anBtnStock.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
-    if (sectionKey === 'out') dom.anBtnOut.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-red-600 text-white shadow-sm transition flex justify-between items-center truncate w-full";
-    if (sectionKey === 'performance') dom.anBtnPerformance.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
-
-    state.activeAnalyticsSection = sectionKey;
-    renderAnalyticsViewport();
-}
-
 function renderAnalyticsViewport() {
     dom.analyticsTableHead.innerHTML = '';
     dom.analyticsTableBody.innerHTML = '';
 
+    const buttons = { staff: dom.anBtnStaff, monthly: dom.anBtnMonthly, stock: dom.anBtnStock, out: dom.anBtnOut, performance: dom.anBtnPerformance };
+    Object.keys(buttons).forEach(k => { buttons[k].className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate"; });
+    dom.anBtnOut.className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate";
+
+    const activeBtn = buttons[state.activeAnalyticsSection];
+    if (activeBtn) {
+        activeBtn.className = `text-left p-3 rounded-lg font-bold text-xs sm:text-sm border ${state.activeAnalyticsSection === 'out' ? 'bg-red-600' : 'bg-cyan-600'} text-white shadow-sm transition truncate w-full`;
+    }
+
     if (state.activeAnalyticsSection === 'staff') {
-        dom.analyticsPanelTitle.textContent = "Employee Performance (Current Shift)";
+        dom.analyticsPanelTitle.textContent = "Employee Performance Metrics (Current Shift)";
         dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Employee Name</th><th class="p-3 text-center">Volume</th><th class="p-3 text-right">Profit</th></tr>`;
         state.staff.forEach(name => {
             const staffSales = state.currentShiftSales.filter(s => s.seller === name);
@@ -284,6 +299,28 @@ function renderAnalyticsViewport() {
             row.innerHTML = `<td class="p-3 font-bold text-slate-900">${name}</td><td class="p-3 text-center text-gray-600 font-bold">${totalVolume} items</td><td class="p-3 text-right text-emerald-600 font-black">+$${netProfit.toFixed(2)}</td>`;
             dom.analyticsTableBody.appendChild(row);
         });
+    }
+    else if (state.activeAnalyticsSection === 'monthly') {
+        // Grouped Month-Wise Ledger View
+        dom.analyticsPanelTitle.textContent = "Historical Ledger Statement (Month-Wise Aggregates)";
+        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Calendar Month</th><th class="p-3 text-center">Transactions Count</th><th class="p-3 text-right">Net Shift Profit Generated</th></tr>`;
+        
+        const monthsTracked = Object.keys(state.historicalLedger);
+        if (monthsTracked.length === 0) {
+            dom.analyticsTableBody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400">No historical monthly statements are on file yet. Logs compile on shift clock outs.</td></tr>`;
+        } else {
+            monthsTracked.forEach(monthKey => {
+                const monthData = state.historicalLedger[monthKey];
+                const row = document.createElement('tr');
+                row.className = "font-medium text-gray-700";
+                row.innerHTML = `
+                    <td class="p-3 font-bold text-slate-900">${monthKey}</td>
+                    <td class="p-3 text-center text-slate-500">${monthData.totalSalesCount} volume</td>
+                    <td class="p-3 text-right text-cyan-700 font-black">$${monthData.netProfitBanked.toFixed(2)}</td>
+                `;
+                dom.analyticsTableBody.appendChild(row);
+            });
+        }
     }
     else if (state.activeAnalyticsSection === 'stock') {
         dom.analyticsPanelTitle.textContent = "Warehouse Stock Levels Ledger";
@@ -327,28 +364,15 @@ function renderAnalyticsViewport() {
     }
 }
 
-// --- Dynamic Event Wiring Pipelines ---
-dom.expType.addEventListener('change', () => {
-    if (dom.expType.value === 'Other') {
-        dom.expCustomContainer.classList.remove('hidden');
-        dom.expCustomDesc.required = true;
-    } else {
-        dom.expCustomContainer.classList.add('hidden');
-        dom.expCustomDesc.required = false;
-    }
-});
-
-// FIXED: Explicitly maps the structural switch triggers to each tab button click
-Object.keys(dom.tabs).forEach(key => {
-    dom.tabs[key].addEventListener('click', () => switchMainTab(key));
-});
-
+// --- Dynamic Interaction Wire Bindings ---
+Object.keys(dom.tabs).forEach(key => { dom.tabs[key].addEventListener('click', () => switchMainTab(key)); });
 dom.anBtnStaff.addEventListener('click', () => switchAnalyticsSection('staff'));
+dom.anBtnMonthly.addEventListener('click', () => switchAnalyticsSection('monthly'));
 dom.anBtnStock.addEventListener('click', () => switchAnalyticsSection('stock'));
 dom.anBtnOut.addEventListener('click', () => switchAnalyticsSection('out'));
 dom.anBtnPerformance.addEventListener('click', () => switchAnalyticsSection('performance'));
 
-// --- Authentication Engine Flow Logic ---
+// --- Authentication Engine Mechanics Flow ---
 dom.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     dom.loginError.classList.add('hidden');
@@ -362,6 +386,7 @@ dom.loginForm.addEventListener('submit', async (e) => {
     if (inputHash === targetMasterHash) {
         state.currentUser = userSelected;
         state.isShiftActive = true;
+        
         state.currentShiftSales = [];
         state.currentShiftExpenses = [];
         state.currentSalesProfitTotal = 0.00;
@@ -374,15 +399,21 @@ dom.loginForm.addEventListener('submit', async (e) => {
         dom.loginWall.classList.add('hidden');
         dom.appWorkspace.classList.remove('hidden');
         dom.appWorkspace.classList.add('flex');
+
+        // Manage Role-Based Privileges Visibility Matrices
+        if (state.currentUser === "Ken") {
+            dom.btnMasterReset.classList.remove('hidden');
+            dom.inventoryControlBox.classList.remove('opacity-40', 'pointer-events-none');
+            dom.inventoryLockNotice.classList.add('hidden');
+        } else {
+            dom.btnMasterReset.classList.add('hidden');
+            dom.inventoryControlBox.classList.add('opacity-40', 'pointer-events-none');
+            dom.inventoryLockNotice.classList.remove('hidden');
+        }
         
         updateSalesAndExpensesUI();
         switchMainTab('sales');
     } else {
-        console.error("Denlight Auth Failure:\n" + 
-                      `Attempted User: ${userSelected}\n` +
-                      `Input Hash:     ${inputHash}\n` +
-                      `Expected Hash:  ${targetMasterHash}`);
-                      
         dom.loginError.classList.remove('hidden');
         dom.loginPassword.value = "";
     }
@@ -391,7 +422,18 @@ dom.loginForm.addEventListener('submit', async (e) => {
 dom.btnClockOut.addEventListener('click', () => {
     if (!state.isShiftActive) return;
     
-    if (confirm(`Clock out current shift for ${state.currentUser}?\nNet Settled Shift Profit: $${state.currentNetProfitTotal.toFixed(2)}`)) {
+    if (confirm(`Clock out shift for ${state.currentUser}?\nNet Settled Shift Profit: $${state.currentNetProfitTotal.toFixed(2)}`)) {
+        
+        // Group & Commit data logs month-wise to historical matrices
+        const currentMonthKey = getActiveFormattedMonthKey();
+        if (!state.historicalLedger[currentMonthKey]) {
+            state.historicalLedger[currentMonthKey] = { totalSalesCount: 0, netProfitBanked: 0.00 };
+        }
+        state.historicalLedger[currentMonthKey].totalSalesCount += state.currentShiftSales.length;
+        state.historicalLedger[currentMonthKey].netProfitBanked += state.currentNetProfitTotal;
+        
+        localStorage.setItem('denlight_historical_ledger', JSON.stringify(state.historicalLedger));
+
         state.isShiftActive = false;
         state.currentUser = null;
         
@@ -404,8 +446,14 @@ dom.btnClockOut.addEventListener('click', () => {
 
 dom.securityForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const newPlaintextPass = dom.secNewPass.value.trim();
     
+    if (state.currentUser !== "Ken") {
+        alert("🔒 Access Denied: Only Ken can update the system master password.");
+        dom.secNewPass.value = "";
+        return;
+    }
+
+    const newPlaintextPass = dom.secNewPass.value.trim();
     if (newPlaintextPass.length < 6) {
         alert("The shop password must be at least 6 characters long.");
         return;
@@ -415,12 +463,17 @@ dom.securityForm.addEventListener('submit', async (e) => {
     localStorage.setItem('denlight_secure_hash', encryptedHash);
     
     dom.secNewPass.value = "";
-    alert("Master Security Access Password Updated!");
+    alert("✅ Success: Master Access Password Updated!");
 });
 
-// --- Standard Inventory & Operational Form Handlers ---
+// --- Standard Operational Mutation Handlers ---
 dom.inventoryForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (state.currentUser !== "Ken") {
+        alert("🔒 Access Denied: Only Ken can alter stock configurations.");
+        return;
+    }
+
     const actionValue = dom.invActionSelect.value;
     const inputPrice = parseFloat(dom.invBuyingPrice.value);
     const inputQty = parseInt(dom.invQty.value);
@@ -432,7 +485,8 @@ dom.inventoryForm.addEventListener('submit', (e) => {
         const index = state.inventory.findIndex(i => i.id === actionValue);
         if (index !== -1) {
             state.inventory[index].qty += inputQty;
-            state.inventory[index].buyingPrice = inputPrice;
+            // Requirement Met: Updates buying price for future sales. Existing logs preserve old calculated bounds.
+            state.inventory[index].buyingPrice = inputPrice; 
         }
     }
     localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
@@ -444,6 +498,10 @@ dom.inventoryForm.addEventListener('submit', (e) => {
 
 dom.staffForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (state.currentUser !== "Ken") {
+        alert("🔒 Access Denied: Only Ken can add employees.");
+        return;
+    }
     const cleanName = dom.staffName.value.trim();
     if (state.staff.includes(cleanName)) { alert("This employee name already exists."); return; }
     state.staff.push(cleanName);
@@ -460,7 +518,8 @@ dom.salesForm.addEventListener('submit', (e) => {
     if (itemIndex === -1 || state.inventory[itemIndex].qty <= 0) return;
 
     const item = state.inventory[itemIndex];
-    const calculatedProfit = soldPrice - item.buyingPrice;
+    // Immutable Profit Logic: Captures active item buying price at this exact split-second
+    const calculatedProfit = soldPrice - item.buyingPrice; 
 
     state.inventory[itemIndex].qty -= 1;
     state.inventory[itemIndex].soldVolume = (state.inventory[itemIndex].soldVolume || 0) + 1;
@@ -489,10 +548,19 @@ dom.expenseForm.addEventListener('submit', (e) => {
     dom.expCustomContainer.classList.add('hidden');
 });
 
+// Ken Exclusive Reset Engine Handler
 dom.btnMasterReset.addEventListener('click', () => {
-    if (confirm("Warning: This will wipe out all temporary local storage keys. Proceed?")) {
-        localStorage.clear();
-        initializeApplication();
+    if (state.currentUser !== "Ken") return;
+    
+    // Multi-staged verification confirmations warning layers
+    const step1 = confirm("🛑 CRITICAL WARNING: You are about to completely wipe out the Denlight system data. This removes every sales history log, month ledger, and stock catalog item permanently. Do not proceed unless completely necessary.");
+    if (step1) {
+        const step2 = confirm("⚠️ FINAL VERIFICATION REQUIRED: Are you absolutely certain you want to clear the entire business database? This action cannot be reversed.");
+        if (step2) {
+            localStorage.clear();
+            initializeApplication();
+            alert("System databases successfully purged back to stock parameters.");
+        }
     }
 });
 
@@ -508,9 +576,13 @@ async function initializeApplication() {
         const defaultHash = await generateSHA256(DEFAULT_PASSWORD_PLAIN);
         localStorage.setItem('denlight_secure_hash', defaultHash);
     }
+    if (!localStorage.getItem('denlight_historical_ledger')) {
+        localStorage.setItem('denlight_historical_ledger', JSON.stringify({}));
+    }
 
     state.inventory = JSON.parse(localStorage.getItem('denlight_inventory'));
     state.staff = JSON.parse(localStorage.getItem('denlight_staff'));
+    state.historicalLedger = JSON.parse(localStorage.getItem('denlight_historical_ledger'));
     
     state.currentUser = null;
     state.isShiftActive = false;
@@ -524,8 +596,8 @@ async function initializeApplication() {
     dom.loginWall.classList.remove('hidden');
     dom.loginError.classList.add('hidden');
     
-    console.log("Denlight Security Engine: Securely Bootstrapped.");
+    console.log("Denlight Security Engine: Successfully Bootstrapped.");
 }
 
-// Fire Bootloader
+// Boot application
 initializeApplication();
