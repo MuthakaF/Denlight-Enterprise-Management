@@ -3,297 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Denlight - Enterprise Management Engine</title>
+    <title>Denlight - Secure Enterprise Workspace</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen font-sans flex flex-col antialiased">
 
-    <!-- Top Master Control Header (Stack on mobile, row on large screens) -->
-    <header class="bg-slate-900 text-white p-4 shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div class="flex flex-col items-center sm:items-start text-center sm:text-left w-full sm:w-auto">
-            <h1 class="text-2xl font-bold tracking-wider text-cyan-400">DENLIGHT</h1>
-            <p class="text-xs text-slate-400">Enterprise Sales & Inventory Ecosystem</p>
-            <!-- System Trial Maintenance Reset Action Button -->
-            <button id="btn-master-reset" class="mt-2 bg-slate-800 hover:bg-rose-900 hover:text-white border border-slate-700 text-slate-400 text-xs px-3 py-1 rounded transition font-medium w-full sm:w-auto">
-                🔄 Reset Application Data
-            </button>
-        </div>
-        
-        <!-- Shift Lifecycle Clock Engine Controls -->
-        <div class="flex items-center justify-between sm:justify-end space-x-4 bg-slate-800 p-2.5 rounded-lg border border-slate-700 w-full sm:w-auto">
-            <div class="text-left sm:text-right">
-                <span id="shift-status" class="inline-block w-3 h-3 rounded-full bg-red-500 mr-1 sm:mr-2"></span>
-                <span id="status-text" class="text-xs sm:text-sm font-medium text-slate-300">Shift Closed</span>
+    <!-- LOGIN PORTAL LANDING WALL ACCESS SCREEN -->
+    <div id="login-wall" class="fixed inset-0 bg-slate-900 z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-100 w-full max-w-md space-y-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-black tracking-wider text-slate-900">DENLIGHT</h1>
+                <p class="text-xs text-cyan-600 font-bold uppercase tracking-widest mt-1">Enterprise Shift Authentication</p>
             </div>
-            <div class="flex space-x-2">
-                <button id="btn-clock-in" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 sm:px-4 py-1.5 rounded text-xs sm:text-sm font-semibold transition">Clock In</button>
-                <button id="btn-clock-out" class="bg-rose-600 hover:bg-rose-500 text-white px-3 sm:px-4 py-1.5 rounded text-xs sm:text-sm font-semibold transition opacity-50 cursor-not-allowed" disabled>Clock Out</button>
-            </div>
-        </div>
-    </header>
 
-    <!-- Dashboard Core View Router Tabs (Horizontal scrollable wrapper on tiny devices) -->
-    <div class="bg-white border-b border-gray-200 shadow-sm overflow-x-auto whitespace-nowrap sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex space-x-4 sm:space-x-8">
-            <button id="tab-sales" class="tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition inline-block">
-                🖩 Sales Register
-            </button>
-            <button id="tab-inventory" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
-                📦 Stock Room
-            </button>
-            <button id="tab-staff" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
-                👥 Staff Roster
-            </button>
-            <button id="tab-overview" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
-                📊 Analytics Engine
-            </button>
+            <!-- Login Status Error Banner Alerts -->
+            <div id="login-error" class="hidden bg-rose-50 text-rose-700 text-xs font-semibold p-3 rounded-lg border border-rose-100 text-center">
+                ❌ Invalid credentials provided. Please try again.
+            </div>
+
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Employee Username</label>
+                    <select id="login-username" class="w-full p-3 border rounded-xl bg-slate-50 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-none" required>
+                        <!-- Injected via staff arrays dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Access Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" required>
+                </div>
+                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-3 rounded-xl transition text-sm shadow-md shadow-cyan-100">
+                    Verify Credentials & Clock In
+                </button>
+            </form>
         </div>
     </div>
 
-    <!-- Main Content Workspace Router -->
-    <main class="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-grow">
-        
-        <!-- SECTION 1: SALES & EXPENSES REGISTER VIEW -->
-        <div id="view-sales" class="tab-view space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- Main POS Logging Register -->
-                <div class="lg:col-span-2 space-y-6">
-                    <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <span>Live Sales Transaction Panel</span>
-                            <span class="text-xs font-normal text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 self-start sm:self-auto" id="sales-warning">Requires Active Shift</span>
-                        </h2>
-                        
-                        <!-- Sale Entry Input Form (Stacks completely on mobile) -->
-                        <form id="sales-form" class="flex flex-col gap-4 mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-600 mb-1">Select Item</label>
-                                    <select id="sale-item-select" class="w-full p-2.5 sm:p-2 border rounded bg-white text-sm" required disabled>
-                                        <option value="">-- Choose Stock --</option>
-                                    </select>
+    <!-- MAIN APPLICATIONS ACTIVE SYSTEM DESKTOP (Hidden until auth verification matches) -->
+    <div id="app-workspace" class="hidden flex-col min-h-screen">
+        <!-- Top Master Control Header -->
+        <header class="bg-slate-900 text-white p-4 shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex flex-col items-center sm:items-start text-center sm:text-left w-full sm:w-auto">
+                <h1 class="text-2xl font-bold tracking-wider text-cyan-400">DENLIGHT</h1>
+                <p class="text-xs text-slate-400">Enterprise Sales & Inventory Ecosystem</p>
+                <button id="btn-master-reset" class="mt-2 bg-slate-800 hover:bg-rose-900 hover:text-white border border-slate-700 text-slate-400 text-xs px-3 py-1 rounded transition font-medium w-full sm:w-auto">
+                    🔄 Reset Application Data
+                </button>
+            </div>
+            
+            <!-- Shift Status Control Monitor Panel -->
+            <div class="flex items-center justify-between sm:justify-end space-x-4 bg-slate-800 p-2.5 rounded-lg border border-slate-700 w-full sm:w-auto">
+                <div class="text-left sm:text-right">
+                    <span id="active-user-badge" class="block text-xs text-cyan-400 font-bold">User: Loading...</span>
+                    <span class="text-xs font-medium text-slate-400">Shift Status: Active</span>
+                </div>
+                <button id="btn-clock-out" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition">
+                    Clock Out & Lock
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Core View Router Tabs -->
+        <div class="bg-white border-b border-gray-200 shadow-sm overflow-x-auto whitespace-nowrap sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 flex space-x-4 sm:space-x-8">
+                <button id="tab-sales" class="tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition inline-block">
+                    🖩 Sales Register
+                </button>
+                <button id="tab-inventory" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
+                    📦 Stock Room
+                </button>
+                <button id="tab-staff" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
+                    👥 Staff & Security
+                </button>
+                <button id="tab-overview" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
+                    📊 Analytics Engine
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Workspace Router -->
+        <main class="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-grow">
+            
+            <!-- SECTION 1: SALES & EXPENSES REGISTER VIEW -->
+            <div id="view-sales" class="tab-view space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Main POS Logging Register -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Live Sales Transaction Panel</h2>
+                            
+                            <form id="sales-form" class="flex flex-col gap-4 mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-600 mb-1">Select Item</label>
+                                        <select id="sale-item-select" class="w-full p-2.5 sm:p-2 border rounded bg-white text-sm" required>
+                                            <option value="">-- Choose Stock --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-600 mb-1">Selling Price ($)</label>
+                                        <input type="number" id="sale-price" step="0.01" min="0" placeholder="0.00" class="w-full p-2.5 sm:p-2 border rounded text-sm shadow-sm" required>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-600 mb-1">Selling Price ($)</label>
-                                    <input type="number" id="sale-price" step="0.01" min="0" placeholder="0.00" class="w-full p-2.5 sm:p-2 border rounded text-sm shadow-sm" required disabled>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-600 mb-1">Attending Employee</label>
-                                    <select id="sale-employee" class="w-full p-2.5 sm:p-2 border rounded bg-white text-sm" required disabled>
-                                        <!-- Dynamic -->
-                                    </select>
+                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Post Sale</button>
+                            </form>
+
+                            <div class="overflow-x-auto -mx-4 sm:mx-0">
+                                <div class="inline-block min-w-full align-middle p-4 sm:p-0">
+                                    <table class="w-full text-left border-collapse text-sm">
+                                        <thead class="bg-slate-100 text-gray-700 font-semibold border-b">
+                                            <tr>
+                                                <th class="p-3 whitespace-nowrap">Item Name</th>
+                                                <th class="p-3 whitespace-nowrap">Sold Price</th>
+                                                <th class="p-3 whitespace-nowrap">Calculated Profit</th>
+                                                <th class="p-3 whitespace-nowrap">Seller</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sales-table-body" class="divide-y divide-gray-100"></tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <button type="submit" id="btn-add-sale" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition opacity-50 cursor-not-allowed" disabled>Post Sale</button>
-                        </form>
+                        </section>
+                    </div>
 
-                        <!-- Live Shift Sales Table Output (With Horizontal Scroll safeguards for small screens) -->
-                        <div class="overflow-x-auto -mx-4 sm:mx-0">
-                            <div class="inline-block min-w-full align-middle p-4 sm:p-0">
+                    <!-- Live Shift Expenses Panel -->
+                    <div class="lg:col-span-1">
+                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Shift Outflows & Expenses</h2>
+                            <form id="expense-form" class="space-y-3 p-4 bg-rose-50/50 border border-rose-100 rounded-lg mb-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-rose-900 mb-1">Expense Type</label>
+                                    <select id="exp-type" class="w-full p-2.5 sm:p-2 border rounded bg-white text-sm" required>
+                                        <option value="Transport">Transport</option>
+                                        <option value="Water">Water</option>
+                                        <option value="Bills">Bills</option>
+                                        <option value="Other">Other (Specify Below)</option>
+                                    </select>
+                                </div>
+                                <div id="exp-custom-container" class="hidden">
+                                    <label class="block text-xs font-bold text-rose-900 mb-1">Custom Description</label>
+                                    <input type="text" id="exp-custom-desc" placeholder="e.g. Broken bulb replacement" class="w-full p-2.5 sm:p-2 border rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-rose-900 mb-1">Amount ($)</label>
+                                    <input type="number" id="exp-amount" step="0.01" min="0.01" placeholder="0.00" class="w-full p-2.5 sm:p-2 border rounded text-sm shadow-sm" required>
+                                </div>
+                                <button type="submit" class="w-full bg-rose-700 hover:bg-rose-600 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Log Expense</button>
+                            </form>
+
+                            <div class="overflow-x-auto -mx-4 sm:mx-0">
+                                <div class="inline-block min-w-full align-middle p-4 sm:p-0">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="bg-slate-50 text-gray-600 border-b">
+                                            <tr>
+                                                <th class="p-2">Type</th>
+                                                <th class="p-2 text-right">Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="expenses-table-body" class="divide-y divide-gray-100"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: STOCK DATABASE MANAGEMENT VIEW -->
+            <div id="view-inventory" class="tab-view hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1">
+                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Stock Modification</h2>
+                            <form id="inventory-form" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Select Assignment</label>
+                                    <select id="inv-action-select" class="w-full p-2.5 sm:p-2 border rounded bg-white text-sm font-medium">
+                                        <option value="NEW">-- Create New Product Type --</option>
+                                    </select>
+                                </div>
+                                <div id="inv-name-container">
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Product Title</label>
+                                    <input type="text" id="inv-name" placeholder="e.g. Mechanical Keyboard" class="w-full p-2.5 sm:p-2 border rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Base Buying Cost ($)</label>
+                                    <input type="number" id="inv-buying-price" step="0.01" min="0" placeholder="Cost price to shop" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
+                                </div>
+                                <div>
+                                    <label id="inv-qty-label" class="block text-xs font-bold text-gray-600 mb-1">Initial Stock Quantity</label>
+                                    <input type="number" id="inv-qty" min="0" placeholder="Count size" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
+                                </div>
+                                <button type="submit" id="btn-save-inventory" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Save Stock Data</button>
+                            </form>
+                        </section>
+                    </div>
+                    
+                    <div class="lg:col-span-2">
+                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Current Warehouse Inventory Data</h2>
+                            <div class="overflow-x-auto -mx-4 sm:mx-0 border border-gray-100 sm:rounded-lg">
                                 <table class="w-full text-left border-collapse text-sm">
                                     <thead class="bg-slate-100 text-gray-700 font-semibold border-b">
                                         <tr>
-                                            <th class="p-3 whitespace-nowrap">Item Name</th>
-                                            <th class="p-3 whitespace-nowrap">Sold Price</th>
-                                            <th class="p-3 whitespace-nowrap">Calculated Profit</th>
-                                            <th class="p-3 whitespace-nowrap">Seller</th>
+                                            <th class="p-3 whitespace-nowrap">Product Name</th>
+                                            <th class="p-3 text-right whitespace-nowrap">Buying Cost</th>
+                                            <th class="p-3 text-right whitespace-nowrap">Stock Level</th>
+                                            <th class="p-3 text-right whitespace-nowrap">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="sales-table-body" class="divide-y divide-gray-100"></tbody>
-                                        <!-- Dynamic rows -->
+                                    <tbody id="inventory-table-body" class="divide-y divide-gray-100"></tbody>
                                 </table>
                             </div>
-                        </div>
-                    </section>
+                        </section>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Live Shift Expenses Panel -->
-                <div class="lg:col-span-1">
-                    <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Shift Outflows & Expenses</h2>
-                        
-                        <form id="expense-form" class="space-y-3 p-4 bg-rose-50/50 border border-rose-100 rounded-lg mb-4">
-                            <div>
-                                <label class="block text-xs font-bold text-rose-900 mb-1">Expense Type</label>
-                                <select id="exp-type" class="w-full p-2.5 sm:p-2 border rounded bg-white text-sm" required disabled>
-                                    <option value="Transport">Transport</option>
-                                    <option value="Water">Water</option>
-                                    <option value="Bills">Bills</option>
-                                    <option value="Other">Other (Specify Below)</option>
-                                </select>
-                            </div>
-                            <div id="exp-custom-container" class="hidden">
-                                <label class="block text-xs font-bold text-rose-900 mb-1">Custom Description</label>
-                                <input type="text" id="exp-custom-desc" placeholder="e.g. Broken bulb replacement" class="w-full p-2.5 sm:p-2 border rounded text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-rose-900 mb-1">Amount ($)</label>
-                                <input type="number" id="exp-amount" step="0.01" min="0.01" placeholder="0.00" class="w-full p-2.5 sm:p-2 border rounded text-sm shadow-sm" required disabled>
-                            </div>
-                            <button type="submit" id="btn-add-expense" class="w-full bg-rose-700 hover:bg-rose-600 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition opacity-50 cursor-not-allowed" disabled>Log Expense</button>
-                        </form>
+            <!-- SECTION 3: STAFF & MASTER SECURITY MANAGEMENT TAB VIEW -->
+            <div id="view-staff" class="tab-view hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Security Master Key Override Panel -->
+                    <div class="lg:col-span-1 space-y-4">
+                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-rose-200 bg-rose-50/20">
+                            <h2 class="text-base sm:text-lg font-bold text-rose-950 mb-1">🛡️ Owner Security Settings</h2>
+                            <p class="text-xs text-rose-700 mb-4">Update the system lock code used by employees during login checks.</p>
+                            
+                            <form id="security-form" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-rose-900 mb-1">New Shop Access Password</label>
+                                    <input type="password" id="sec-new-pass" placeholder="Enter new password" class="w-full p-2.5 sm:p-2 border rounded-xl text-sm bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+                                </div>
+                                <button type="submit" class="w-full bg-rose-800 hover:bg-rose-700 text-white p-2.5 sm:p-2 rounded-xl text-sm font-bold transition shadow-sm">
+                                    Update Security Key
+                                </button>
+                            </form>
+                        </section>
 
+                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Onboard New Employee</h2>
+                            <form id="staff-form" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Full Name</label>
+                                    <input type="text" id="staff-name" placeholder="e.g. Sarah Jenkins" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
+                                </div>
+                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Add to Active Staff</button>
+                            </form>
+                        </section>
+                    </div>
+                    
+                    <div class="lg:col-span-2">
+                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active Shop Staff Directory</h2>
+                            <div class="overflow-x-auto border border-gray-100 rounded-lg">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead class="bg-slate-100 text-gray-700 font-semibold border-b">
+                                        <tr>
+                                            <th class="p-3">Employee Name</th>
+                                            <th class="p-3 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="staff-table-body" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: ANALYTICS & DEEP METRICS VIEW -->
+            <div id="view-overview" class="tab-view hidden space-y-6">
+                <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active Shift Live Performance</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="p-4 bg-slate-50 border rounded-lg">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Gross Sales Profit</span>
+                            <p id="stat-current-sales-profit" class="text-xl sm:text-2xl font-bold text-slate-900 mt-1">$0.00</p>
+                        </div>
+                        <div class="p-4 bg-rose-50 border border-rose-100 rounded-lg">
+                            <span class="text-xs font-bold text-rose-700 uppercase">Shift Expenses Total</span>
+                            <p id="stat-current-expenses" class="text-xl sm:text-2xl font-bold text-rose-600 mt-1">$0.00</p>
+                        </div>
+                        <div class="p-4 bg-cyan-50 border border-cyan-100 rounded-lg">
+                            <span class="text-xs font-bold text-cyan-700 uppercase">Net Settled Shift Profit</span>
+                            <p id="stat-current-net-profit" class="text-2xl sm:text-3xl font-black text-cyan-700 mt-1">$0.00</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-2 md:grid-cols-1 gap-2 md:col-span-1">
+                        <button id="an-btn-staff" class="text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate">👥 Employees</button>
+                        <button id="an-btn-stock" class="text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate">📋 Stock Levels</button>
+                        <button id="an-btn-out" class="text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate">
+                            <span class="truncate mr-1">⚠️ Out Stock</span>
+                            <span id="an-badge-out" class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-black">0</span>
+                        </button>
+                        <button id="an-btn-performance" class="text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate">📈 Rank Velocity</button>
+                    </div>
+
+                    <div class="md:col-span-3 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h3 id="analytics-panel-title" class="text-base sm:text-lg font-bold text-gray-900 mb-4 border-b pb-2">Employee Contributions Metrics</h3>
                         <div class="overflow-x-auto -mx-4 sm:mx-0">
                             <div class="inline-block min-w-full align-middle p-4 sm:p-0">
-                                <table class="w-full text-left text-xs">
-                                    <thead class="bg-slate-50 text-gray-600 border-b">
-                                        <tr>
-                                            <th class="p-2">Type</th>
-                                            <th class="p-2 text-right">Cost</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="expenses-table-body" class="divide-y divide-gray-100"></tbody>
+                                <table class="w-full text-left text-sm border-collapse">
+                                    <thead id="analytics-table-head" class="bg-slate-50 text-gray-700 font-semibold border-b"></thead>
+                                    <tbody id="analytics-table-body" class="divide-y divide-gray-100"></tbody>
                                 </table>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECTION 2: STOCK DATABASE MANAGEMENT VIEW -->
-        <div id="view-inventory" class="tab-view hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-1">
-                    <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Stock Modification</h2>
-                        <form id="inventory-form" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600 mb-1">Select Assignment</label>
-                                <select id="inv-action-select" class="w-full p-2.5 sm:p-2 border rounded bg-white text-sm font-medium">
-                                    <option value="NEW">-- Create New Product Type --</option>
-                                </select>
-                            </div>
-                            <div id="inv-name-container">
-                                <label class="block text-xs font-bold text-gray-600 mb-1">Product Title</label>
-                                <input type="text" id="inv-name" placeholder="e.g. Mechanical Keyboard" class="w-full p-2.5 sm:p-2 border rounded text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600 mb-1">Base Buying Cost ($)</label>
-                                <input type="number" id="inv-buying-price" step="0.01" min="0" placeholder="Cost price to shop" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
-                            </div>
-                            <div>
-                                <label id="inv-qty-label" class="block text-xs font-bold text-gray-600 mb-1">Initial Stock Quantity</label>
-                                <input type="number" id="inv-qty" min="0" placeholder="Count size" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
-                            </div>
-                            <button type="submit" id="btn-save-inventory" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Save Stock Data</button>
-                        </form>
-                    </section>
-                </div>
-                
-                <div class="lg:col-span-2">
-                    <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Current Warehouse Inventory Data</h2>
-                        <div class="overflow-x-auto -mx-4 sm:mx-0 border border-gray-100 sm:rounded-lg">
-                            <table class="w-full text-left border-collapse text-sm">
-                                <thead class="bg-slate-100 text-gray-700 font-semibold border-b">
-                                    <tr>
-                                        <th class="p-3 whitespace-nowrap">Product Name</th>
-                                        <th class="p-3 text-right whitespace-nowrap">Buying Cost</th>
-                                        <th class="p-3 text-right whitespace-nowrap">Stock Level</th>
-                                        <th class="p-3 text-right whitespace-nowrap">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="inventory-table-body" class="divide-y divide-gray-100"></tbody>
-                            </table>
-                        </div>
-                    </section>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECTION 3: STAFF MANAGEMENT TAB VIEW -->
-        <div id="view-staff" class="tab-view hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-1">
-                    <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Onboard New Employee</h2>
-                        <form id="staff-form" class="space-y-3">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600 mb-1">Full Name</label>
-                                <input type="text" id="staff-name" placeholder="e.g. Sarah Jenkins" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
-                            </div>
-                            <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Add to Active Staff</button>
-                        </form>
-                    </section>
-                </div>
-                
-                <div class="lg:col-span-2">
-                    <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active Shop Staff Directory</h2>
-                        <div class="overflow-x-auto border border-gray-100 rounded-lg">
-                            <table class="w-full text-left border-collapse text-sm">
-                                <thead class="bg-slate-100 text-gray-700 font-semibold border-b">
-                                    <tr>
-                                        <th class="p-3">Employee Name</th>
-                                        <th class="p-3 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="staff-table-body" class="divide-y divide-gray-100"></tbody>
-                            </table>
-                        </div>
-                    </section>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECTION 4: ANALYTICS & DEEP METRICS VIEW -->
-        <div id="view-overview" class="tab-view hidden space-y-6">
-            
-            <!-- Financial Scorecard Matrix (Stacks into 1 column on small phone screens) -->
-            <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active Shift Live Performance</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="p-4 bg-slate-50 border rounded-lg">
-                        <span class="text-xs font-bold text-slate-500 uppercase">Gross Sales Profit</span>
-                        <p id="stat-current-sales-profit" class="text-xl sm:text-2xl font-bold text-slate-900 mt-1">$0.00</p>
-                    </div>
-                    <div class="p-4 bg-rose-50 border border-rose-100 rounded-lg">
-                        <span class="text-xs font-bold text-rose-700 uppercase">Shift Expenses Total</span>
-                        <p id="stat-current-expenses" class="text-xl sm:text-2xl font-bold text-rose-600 mt-1">$0.00</p>
-                    </div>
-                    <div class="p-4 bg-cyan-50 border border-cyan-100 rounded-lg">
-                        <span class="text-xs font-bold text-cyan-700 uppercase">Net Settled Shift Profit</span>
-                        <p id="stat-current-net-profit" class="text-2xl sm:text-3xl font-black text-cyan-700 mt-1">$0.00</p>
                     </div>
                 </div>
-            </section>
-
-            <!-- Interactive Tabbed Sub-Analytics System -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                
-                <!-- Sub-Analytics Selection (Switches to layout rows on smaller viewports) -->
-                <div class="grid grid-cols-2 md:grid-cols-1 gap-2 md:col-span-1">
-                    <button id="an-btn-staff" class="text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate">👥 Employees</button>
-                    <button id="an-btn-stock" class="text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate">📋 Stock Levels</button>
-                    <button id="an-btn-out" class="text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate">
-                        <span class="truncate mr-1">⚠️ Out Stock</span>
-                        <span id="an-badge-out" class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-black">0</span>
-                    </button>
-                    <button id="an-btn-performance" class="text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate">📈 Rank Velocity</button>
-                </div>
-
-                <!-- Right Variable Content Screen Output -->
-                <div class="md:col-span-3 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 id="analytics-panel-title" class="text-base sm:text-lg font-bold text-gray-900 mb-4 border-b pb-2">Employee Contributions Metrics</h3>
-                    
-                    <div class="overflow-x-auto -mx-4 sm:mx-0">
-                        <div class="inline-block min-w-full align-middle p-4 sm:p-0">
-                            <table class="w-full text-left text-sm border-collapse">
-                                <thead id="analytics-table-head" class="bg-slate-50 text-gray-700 font-semibold border-b"></thead>
-                                <tbody id="analytics-table-body" class="divide-y divide-gray-100"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
-    <!-- Connect interactive script module -->
+    <!-- Connect local framework logic -->
     <script src="app.js"></script>
 </body>
 </html>

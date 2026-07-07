@@ -1,5 +1,5 @@
 /**
- * Denlight - Advanced Enterprise Dashboard Storage Engine Architecture
+ * Denlight - Secure Enterprise Dashboard Storage Engine Architecture
  */
 
 // --- Persistent Application Engine LocalStorage Defaults ---
@@ -15,18 +15,24 @@ function getInitialStaff() {
     return ["Alex", "Jordan", "Taylor", "Morgan"];
 }
 
+// Default Password Hash Value for "denlight2026"
+const DEFAULT_PASSWORD_HASH = "8ba7b04e287ffdbb770f7bb00388147d197607a9be3bfa7585a73041f021e5f0";
+
 if (!localStorage.getItem('denlight_inventory')) {
     localStorage.setItem('denlight_inventory', JSON.stringify(getInitialInventory()));
 }
 if (!localStorage.getItem('denlight_staff')) {
     localStorage.setItem('denlight_staff', JSON.stringify(getInitialStaff()));
 }
+if (!localStorage.getItem('denlight_secure_hash')) {
+    localStorage.setItem('denlight_secure_hash', DEFAULT_PASSWORD_HASH);
+}
 
 // --- Global Application Data Runtime States ---
 let state = {
     inventory: JSON.parse(localStorage.getItem('denlight_inventory')),
     staff: JSON.parse(localStorage.getItem('denlight_staff')),
-    isShiftActive: false,
+    currentUser: null,
     
     // Shift Data Bucket Vectors
     currentShiftSales: [],
@@ -42,6 +48,17 @@ let state = {
 
 // --- DOM Cache System Selectors ---
 const dom = {
+    // Auth Layer UI Controls
+    loginWall: document.getElementById('login-wall'),
+    loginForm: document.getElementById('login-form'),
+    loginUsername: document.getElementById('login-username'),
+    loginPassword: document.getElementById('login-password'),
+    loginError: document.getElementById('login-error'),
+    appWorkspace: document.getElementById('app-workspace'),
+    activeUserBadge: document.getElementById('active-user-badge'),
+    securityForm: document.getElementById('security-form'),
+    secNewPass: document.getElementById('sec-new-pass'),
+
     tabs: {
         sales: document.getElementById('tab-sales'),
         inventory: document.getElementById('tab-inventory'),
@@ -54,14 +71,9 @@ const dom = {
         staff: document.getElementById('view-staff'),
         overview: document.getElementById('view-overview')
     },
-    btnClockIn: document.getElementById('btn-clock-in'),
     btnClockOut: document.getElementById('btn-clock-out'),
     btnMasterReset: document.getElementById('btn-master-reset'),
-    shiftStatusIndicator: document.getElementById('shift-status'),
-    statusText: document.getElementById('status-text'),
-    salesWarning: document.getElementById('sales-warning'),
     
-    // Inventory Form Management Selectors
     inventoryForm: document.getElementById('inventory-form'),
     invActionSelect: document.getElementById('inv-action-select'),
     invNameContainer: document.getElementById('inv-name-container'),
@@ -71,7 +83,6 @@ const dom = {
     invQty: document.getElementById('inv-qty'),
     inventoryTableBody: document.getElementById('inventory-table-body'),
 
-    // Staff Structural DOM Element Links
     staffForm: document.getElementById('staff-form'),
     staffName: document.getElementById('staff-name'),
     staffTableBody: document.getElementById('staff-table-body'),
@@ -79,8 +90,6 @@ const dom = {
     salesForm: document.getElementById('sales-form'),
     saleItemSelect: document.getElementById('sale-item-select'),
     salePrice: document.getElementById('sale-price'),
-    saleEmployee: document.getElementById('sale-employee'),
-    btnAddSale: document.getElementById('btn-add-sale'),
     salesTableBody: document.getElementById('sales-table-body'),
     
     expenseForm: document.getElementById('expense-form'),
@@ -88,7 +97,6 @@ const dom = {
     expCustomContainer: document.getElementById('exp-custom-container'),
     expCustomDesc: document.getElementById('exp-custom-desc'),
     expAmount: document.getElementById('exp-amount'),
-    btnAddExpense: document.getElementById('btn-add-expense'),
     expensesTableBody: document.getElementById('expenses-table-body'),
     
     statCurrentSalesProfit: document.getElementById('stat-current-sales-profit'),
@@ -105,6 +113,14 @@ const dom = {
     analyticsTableBody: document.getElementById('analytics-table-body')
 };
 
+// --- Crypto Verification Hashing Utilities (SHA-256) ---
+async function generateSHA256(plainText) {
+    const msgBuffer = new TextEncoder().encode(plainText);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // --- View Router Control Switches Engine Routines ---
 function switchMainTab(tabKey) {
     Object.keys(dom.tabs).forEach(k => {
@@ -115,12 +131,8 @@ function switchMainTab(tabKey) {
     dom.views[tabKey].classList.remove('hidden');
     state.activeTab = tabKey;
 
-    // Responsive Mobile Optimization Fix: Force windows scroll level back up to top index
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    if (tabKey === 'overview') {
-        renderAnalyticsViewport();
-    }
+    if (tabKey === 'overview') renderAnalyticsViewport();
 }
 
 Object.keys(dom.tabs).forEach(k => {
@@ -213,21 +225,15 @@ window.deleteInventoryItem = function(id) {
     }
 };
 
-function updateStaffUI() {
+function updateStaffAndLoginUI() {
     dom.staffTableBody.innerHTML = '';
-    dom.saleEmployee.innerHTML = '';
-
-    if (state.staff.length === 0) {
-        dom.saleEmployee.innerHTML = '<option value="">-- No Staff Available --</option>';
-        dom.staffTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-400">No staff registered.</td></tr>`;
-        return;
-    }
+    dom.loginUsername.innerHTML = '';
 
     state.staff.forEach(name => {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
-        dom.saleEmployee.appendChild(option);
+        dom.loginUsername.appendChild(option);
 
         const row = document.createElement('tr');
         row.className = "hover:bg-gray-50 text-gray-700 font-semibold transition";
@@ -244,10 +250,10 @@ function updateStaffUI() {
 }
 
 window.deleteStaffMember = function(name) {
-    if (confirm(`Remove ${name} from active store register structures?`)) {
+    if (confirm(`Remove ${name} from active store registers?`)) {
         state.staff = state.staff.filter(member => member !== name);
         localStorage.setItem('denlight_staff', JSON.stringify(state.staff));
-        updateStaffUI();
+        updateStaffAndLoginUI();
         if (state.activeTab === 'overview') renderAnalyticsViewport();
     }
 };
@@ -268,25 +274,15 @@ function updateSalesAndExpensesUI() {
     });
 
     state.currentNetProfitTotal = state.currentSalesProfitTotal - state.currentExpensesTotal;
-
     dom.statCurrentSalesProfit.textContent = `$${state.currentSalesProfitTotal.toFixed(2)}`;
     dom.statCurrentExpenses.textContent = `$${state.currentExpensesTotal.toFixed(2)}`;
     dom.statCurrentNetProfit.textContent = `$${state.currentNetProfitTotal.toFixed(2)}`;
 }
 
-// --- Advanced Analytics Engine Viewport Switching ---
-
+// --- Analytics Viewport Engine ---
 function switchAnalyticsSection(sectionKey) {
-    const buttons = {
-        staff: dom.anBtnStaff,
-        stock: dom.anBtnStock,
-        out: dom.anBtnOut,
-        performance: dom.anBtnPerformance
-    };
-    
-    Object.keys(buttons).forEach(k => {
-        buttons[k].className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate";
-    });
+    const buttons = { staff: dom.anBtnStaff, stock: dom.anBtnStock, out: dom.anBtnOut, performance: dom.anBtnPerformance };
+    Object.keys(buttons).forEach(k => { buttons[k].className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate"; });
     dom.anBtnOut.className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate";
 
     if (sectionKey === 'staff') dom.anBtnStaff.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
@@ -305,67 +301,50 @@ function renderAnalyticsViewport() {
     if (state.activeAnalyticsSection === 'staff') {
         dom.analyticsPanelTitle.textContent = "Employee Performance (Current Shift)";
         dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Employee Name</th><th class="p-3 text-center">Volume</th><th class="p-3 text-right">Profit</th></tr>`;
-        
-        if (state.staff.length === 0) {
-            dom.analyticsTableBody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400">No employees registered.</td></tr>`;
-            return;
-        }
-
         state.staff.forEach(name => {
             const staffSales = state.currentShiftSales.filter(s => s.seller === name);
             const totalVolume = staffSales.length;
             const netProfit = staffSales.reduce((acc, curr) => acc + curr.profit, 0);
-
             const row = document.createElement('tr');
             row.innerHTML = `<td class="p-3 font-bold text-slate-900">${name}</td><td class="p-3 text-center text-gray-600 font-bold">${totalVolume} items</td><td class="p-3 text-right text-emerald-600 font-black">+$${netProfit.toFixed(2)}</td>`;
             dom.analyticsTableBody.appendChild(row);
         });
     }
-    
     else if (state.activeAnalyticsSection === 'stock') {
         dom.analyticsPanelTitle.textContent = "Warehouse Stock Levels Ledger";
         dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-right">Qty</th><th class="p-3 text-center">Status</th></tr>`;
-        
         state.inventory.forEach(item => {
             let statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-bold">Good</span>`;
             if (item.qty === 0) statusBadge = `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded font-bold">Empty</span>`;
             else if (item.qty < 5) statusBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">Low</span>`;
-
             const row = document.createElement('tr');
             row.innerHTML = `<td class="p-3 font-semibold text-gray-800 break-all">${item.name}</td><td class="p-3 text-right font-black">${item.qty} u</td><td class="p-3 text-center">${statusBadge}</td>`;
             dom.analyticsTableBody.appendChild(row);
         });
     }
-
     else if (state.activeAnalyticsSection === 'out') {
         dom.analyticsPanelTitle.textContent = "Urgent Stock Replenishment Critical Logs";
         dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-right">Cost</th><th class="p-3 text-center">Status</th></tr>`;
-        
         const outOfStockItems = state.inventory.filter(item => parseInt(item.qty) === 0);
         if (outOfStockItems.length === 0) {
             dom.analyticsTableBody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-medium">✓ Stock levels healthy.</td></tr>`;
         } else {
             outOfStockItems.forEach(item => {
                 const row = document.createElement('tr');
-                row.className = "bg-rose-50/40";
                 row.innerHTML = `<td class="p-3 font-bold text-rose-900 break-all">${item.name}</td><td class="p-3 text-right text-gray-600">$${item.buyingPrice.toFixed(2)}</td><td class="p-3 text-center"><span class="text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded text-xs font-bold whitespace-nowrap">OUT</span></td>`;
                 dom.analyticsTableBody.appendChild(row);
             });
         }
     }
-
     else if (state.activeAnalyticsSection === 'performance') {
         dom.analyticsPanelTitle.textContent = "All-Time Product Sales Volumes";
         dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-center">Units Sold</th><th class="p-3 text-center">Rank</th></tr>`;
-        
         let sortedItems = [...state.inventory].sort((a, b) => (b.soldVolume || 0) - (a.soldVolume || 0));
-        
         sortedItems.forEach((item, index) => {
             const volume = item.soldVolume || 0;
             let rankingBadge = `<span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-medium">Mid</span>`;
             if (index === 0 && volume > 0) rankingBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-black whitespace-nowrap">🔥 High</span>`;
             else if (index === sortedItems.length - 1 || volume === 0) rankingBadge = `<span class="bg-gray-100 text-gray-400 text-xs px-2 py-0.5 rounded font-normal whitespace-nowrap">Low</span>`;
-
             const row = document.createElement('tr');
             row.innerHTML = `<td class="p-3 font-semibold text-gray-800 break-all">${item.name}</td><td class="p-3 text-center font-bold text-slate-900">${volume} sold</td><td class="p-3 text-center">${rankingBadge}</td>`;
             dom.analyticsTableBody.appendChild(row);
@@ -378,39 +357,79 @@ dom.anBtnStock.addEventListener('click', () => switchAnalyticsSection('stock'));
 dom.anBtnOut.addEventListener('click', () => switchAnalyticsSection('out'));
 dom.anBtnPerformance.addEventListener('click', () => switchAnalyticsSection('performance'));
 
-// --- Core Shift Lifecycle Flow Engines Logic ---
+// --- Authentication Engine Flow Logic Listeners ---
 
-function setShiftSystemState(active) {
-    state.isShiftActive = active;
+dom.loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    dom.loginError.classList.add('hidden');
     
-    dom.btnClockIn.disabled = active;
-    dom.btnClockOut.disabled = !active;
-    dom.saleItemSelect.disabled = !active;
-    dom.salePrice.disabled = !active;
-    dom.saleEmployee.disabled = !active;
-    dom.btnAddSale.disabled = !active;
-    dom.expType.disabled = !active;
-    dom.expAmount.disabled = !active;
-    dom.btnAddExpense.disabled = !active;
+    const userSelected = dom.loginUsername.value;
+    const plainPasswordInput = dom.loginPassword.value;
+    
+    // Hash the input to check against master hash criteria vectors
+    const inputHash = await generateSHA256(plainPasswordInput);
+    const targetMasterHash = localStorage.getItem('denlight_secure_hash');
 
-    if (active) {
-        dom.shiftStatusIndicator.className = "inline-block w-3 h-3 rounded-full bg-emerald-500 mr-2";
-        dom.statusText.textContent = "Shift Open";
-        dom.btnClockIn.classList.add('opacity-50', 'cursor-not-allowed');
-        dom.btnClockOut.classList.remove('opacity-50', 'cursor-not-allowed');
-        dom.btnAddSale.classList.remove('opacity-50', 'cursor-not-allowed');
-        dom.btnAddExpense.classList.remove('opacity-50', 'cursor-not-allowed');
-        dom.salesWarning.classList.add('hidden');
+    if (inputHash === targetMasterHash) {
+        // Authenticated. Initialize active shift states.
+        state.currentUser = userSelected;
+        state.isShiftActive = true;
+        
+        state.currentShiftSales = [];
+        state.currentShiftExpenses = [];
+        state.currentSalesProfitTotal = 0.00;
+        state.currentExpensesTotal = 0.00;
+        state.currentNetProfitTotal = 0.00;
+
+        dom.activeUserBadge.textContent = `User: ${state.currentUser}`;
+        dom.loginPassword.value = "";
+        
+        // Toggle view visibility panels
+        dom.loginWall.classList.add('hidden');
+        dom.appWorkspace.classList.remove('hidden');
+        dom.appWorkspace.classList.add('flex');
+        
+        updateSalesAndExpensesUI();
+        switchMainTab('sales');
     } else {
-        dom.shiftStatusIndicator.className = "inline-block w-3 h-3 rounded-full bg-red-500 mr-2";
-        dom.statusText.textContent = "Shift Closed";
-        dom.btnClockIn.classList.remove('opacity-50', 'cursor-not-allowed');
-        dom.btnClockOut.classList.add('opacity-50', 'cursor-not-allowed');
-        dom.btnAddSale.classList.add('opacity-50', 'cursor-not-allowed');
-        dom.btnAddExpense.classList.add('opacity-50', 'cursor-not-allowed');
-        dom.salesWarning.classList.remove('hidden');
+        dom.loginError.classList.remove('hidden');
     }
-}
+});
+
+// Clock Out Session Settlement Event Listener
+dom.btnClockOut.addEventListener('click', () => {
+    if (!state.isShiftActive) return;
+    
+    if (confirm(`Clock out current shift for ${state.currentUser}?\nNet Settled Shift Profit: $${state.currentNetProfitTotal.toFixed(2)}`)) {
+        state.isShiftActive = false;
+        state.currentUser = null;
+        
+        // Hide application engine workspace view layers, bounce straight back to login screen lock
+        dom.appWorkspace.classList.add('hidden');
+        dom.appWorkspace.classList.remove('flex');
+        dom.loginWall.classList.remove('hidden');
+        dom.loginError.classList.add('hidden');
+    }
+});
+
+// Security Admin Override Form Submission Event Hook
+dom.securityForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPlaintextPass = dom.secNewPass.value;
+    
+    if (newPlaintextPass.length < 6) {
+        alert("For safety reasons, make sure the shop password is at least 6 characters long.");
+        return;
+    }
+
+    const encryptedHash = await generateSHA256(newPlaintextPass);
+    localStorage.setItem('denlight_secure_hash', encryptedHash);
+    
+    dom.secNewPass.value = "";
+    alert("Master Security Access Password Updated Successfully!");
+});
+
+// --- Standard Data Mutators Logic ---
 
 dom.inventoryForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -419,13 +438,7 @@ dom.inventoryForm.addEventListener('submit', (e) => {
     const inputQty = parseInt(dom.invQty.value);
 
     if (actionValue === 'NEW') {
-        const newItem = {
-            id: Date.now().toString(),
-            name: dom.invName.value.trim(),
-            buyingPrice: inputPrice,
-            qty: inputQty,
-            soldVolume: 0
-        };
+        const newItem = { id: Date.now().toString(), name: dom.invName.value.trim(), buyingPrice: inputPrice, qty: inputQty, soldVolume: 0 };
         state.inventory.push(newItem);
     } else {
         const index = state.inventory.findIndex(i => i.id === actionValue);
@@ -434,7 +447,6 @@ dom.inventoryForm.addEventListener('submit', (e) => {
             state.inventory[index].buyingPrice = inputPrice;
         }
     }
-
     localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
     updateInventoryUI();
     dom.inventoryForm.reset();
@@ -445,32 +457,17 @@ dom.inventoryForm.addEventListener('submit', (e) => {
 dom.staffForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const cleanName = dom.staffName.value.trim();
-    
-    if (state.staff.includes(cleanName)) {
-        alert("This employee name already exists.");
-        return;
-    }
-
+    if (state.staff.includes(cleanName)) { alert("This employee name already exists."); return; }
     state.staff.push(cleanName);
     localStorage.setItem('denlight_staff', JSON.stringify(state.staff));
-    
-    updateStaffUI();
+    updateStaffAndLoginUI();
     dom.staffForm.reset();
 });
 
 dom.salesForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (!state.isShiftActive) return;
-
     const itemId = dom.saleItemSelect.value;
     const soldPrice = parseFloat(dom.salePrice.value);
-    const sellerName = dom.saleEmployee.value;
-
-    if (!sellerName) {
-        alert("Please assign an attending employee.");
-        return;
-    }
-
     const itemIndex = state.inventory.findIndex(i => i.id === itemId);
     if (itemIndex === -1 || state.inventory[itemIndex].qty <= 0) return;
 
@@ -481,87 +478,58 @@ dom.salesForm.addEventListener('submit', (e) => {
     state.inventory[itemIndex].soldVolume = (state.inventory[itemIndex].soldVolume || 0) + 1;
     localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
 
-    state.currentShiftSales.push({
-        itemName: item.name,
-        soldPrice: soldPrice,
-        profit: calculatedProfit,
-        seller: sellerName
-    });
-    
+    state.currentShiftSales.push({ itemName: item.name, soldPrice: soldPrice, profit: calculatedProfit, seller: state.currentUser });
     state.currentSalesProfitTotal += calculatedProfit;
 
     updateInventoryUI();
     updateSalesAndExpensesUI();
-    
     dom.saleItemSelect.value = "";
     dom.salePrice.value = "";
 });
 
 dom.expenseForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (!state.isShiftActive) return;
-
     const selectedType = dom.expType.value;
     const customDesc = dom.expCustomDesc.value.trim();
     const amount = parseFloat(dom.expAmount.value);
-
     const displayType = selectedType === 'Other' ? `Other: ${customDesc}` : selectedType;
 
     state.currentShiftExpenses.push({ displayType, amount });
     state.currentExpensesTotal += amount;
-
     updateSalesAndExpensesUI();
-
     dom.expenseForm.reset();
     dom.expCustomContainer.classList.add('hidden');
 });
 
-dom.btnClockIn.addEventListener('click', () => {
-    state.currentShiftSales = [];
-    state.currentShiftExpenses = [];
-    state.currentSalesProfitTotal = 0.00;
-    state.currentExpensesTotal = 0.00;
-    state.currentNetProfitTotal = 0.00;
-    
-    updateSalesAndExpensesUI();
-    setShiftSystemState(true);
-});
-
-dom.btnClockOut.addEventListener('click', () => {
-    if (!state.isShiftActive) return;
-    setShiftSystemState(false);
-    switchMainTab('overview');
-    alert(`Shift Closed Safely!\nNet Settled Shift Profit: $${state.currentNetProfitTotal.toFixed(2)} generated.`);
-});
-
 dom.btnMasterReset.addEventListener('click', () => {
-    if (confirm("Warning: This will wipe out all session metrics. Proceed?")) {
-        localStorage.removeItem('denlight_inventory');
-        localStorage.removeItem('denlight_staff');
-        
+    if (confirm("Warning: This will wipe out all temporary parameters. Proceed?")) {
+        localStorage.clear();
         state.inventory = getInitialInventory();
         state.staff = getInitialStaff();
-        
         localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
         localStorage.setItem('denlight_staff', JSON.stringify(state.staff));
+        localStorage.setItem('denlight_secure_hash', DEFAULT_PASSWORD_HASH);
         
         state.currentShiftSales = [];
         state.currentShiftExpenses = [];
         state.currentSalesProfitTotal = 0.00;
         state.currentExpensesTotal = 0.00;
         state.currentNetProfitTotal = 0.00;
-        
-        setShiftSystemState(false);
+        state.currentUser = null;
+        state.isShiftActive = false;
+
         updateInventoryUI();
-        updateStaffUI();
+        updateStaffAndLoginUI();
         updateSalesAndExpensesUI();
-        switchMainTab('sales');
-        alert("System Reset Complete!");
+        
+        dom.appWorkspace.classList.add('hidden');
+        dom.loginWall.classList.remove('hidden');
+        dom.loginError.classList.add('hidden');
+        alert("System Restored to Baseline Trial Parameters successfully!");
     }
 });
 
 // --- System Initialization Bootstrapping ---
 updateInventoryUI();
-updateStaffUI();
+updateStaffAndLoginUI();
 updateSalesAndExpensesUI();
-setShiftSystemState(false);
