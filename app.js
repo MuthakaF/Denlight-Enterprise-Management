@@ -108,12 +108,15 @@ const dom = {
 // --- View Router Control Switches Engine Routines ---
 function switchMainTab(tabKey) {
     Object.keys(dom.tabs).forEach(k => {
-        dom.tabs[k].className = "tab-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-sm focus:outline-none transition";
+        dom.tabs[k].className = "tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block";
         dom.views[k].classList.add('hidden');
     });
-    dom.tabs[tabKey].className = "tab-btn py-4 px-2 border-b-2 border-cyan-500 text-cyan-600 font-bold text-sm focus:outline-none transition";
+    dom.tabs[tabKey].className = "tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition inline-block";
     dom.views[tabKey].classList.remove('hidden');
     state.activeTab = tabKey;
+
+    // Responsive Mobile Optimization Fix: Force windows scroll level back up to top index
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (tabKey === 'overview') {
         renderAnalyticsViewport();
@@ -139,8 +142,6 @@ dom.expType.addEventListener('change', () => {
 function updateInventoryUI() {
     dom.inventoryTableBody.innerHTML = '';
     dom.saleItemSelect.innerHTML = '<option value="">-- Choose Stock --</option>';
-    
-    // Clear and reset the Stock Management Dropdown configuration menu
     dom.invActionSelect.innerHTML = '<option value="NEW">-- Create New Product Type --</option>';
     
     let outOfStockCounter = 0;
@@ -152,26 +153,24 @@ function updateInventoryUI() {
         const row = document.createElement('tr');
         row.className = "hover:bg-gray-50 text-gray-700 font-medium transition";
         row.innerHTML = `
-            <td class="p-3 font-semibold text-gray-900">${item.name}</td>
+            <td class="p-3 font-semibold text-gray-900 break-all">${item.name}</td>
             <td class="p-3 text-right text-gray-500">$${item.buyingPrice.toFixed(2)}</td>
-            <td class="p-3 text-right font-bold ${item.qty < 5 ? 'text-rose-600 bg-rose-50':'text-gray-700'}">${item.qty} units</td>
+            <td class="p-3 text-right font-bold ${item.qty < 5 ? 'text-rose-600 bg-rose-50':'text-gray-700'}">${item.qty} u</td>
             <td class="p-3 text-right">
                 <button class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded transition border border-rose-200" onclick="deleteInventoryItem('${item.id}')">
-                    🗑️ Delete
+                    🗑️
                 </button>
             </td>
         `;
         dom.inventoryTableBody.appendChild(row);
 
-        // Add choices to the POS drop selector
         if (item.qty > 0) {
             const option = document.createElement('option');
             option.value = item.id;
-            option.textContent = `${item.name} (In Stock: ${item.qty})`;
+            option.textContent = `${item.name} (${item.qty})`;
             dom.saleItemSelect.appendChild(option);
         }
 
-        // Add choices to the stock assignment modification engine
         const stockOpt = document.createElement('option');
         stockOpt.value = item.id;
         stockOpt.textContent = `Restock: ${item.name}`;
@@ -182,7 +181,6 @@ function updateInventoryUI() {
     handleInventoryActionDropdownState();
 }
 
-// Handler checking if user selects a new item layout vs existing item modification values
 function handleInventoryActionDropdownState() {
     const selectedValue = dom.invActionSelect.value;
     if (selectedValue === 'NEW') {
@@ -195,7 +193,7 @@ function handleInventoryActionDropdownState() {
     } else {
         dom.invNameContainer.classList.add('hidden');
         dom.invName.required = false;
-        dom.invQtyLabel.textContent = "Additional Stock Quantity to Add";
+        dom.invQtyLabel.textContent = "Additional Quantity to Add";
         
         const targetItem = state.inventory.find(i => i.id === selectedValue);
         if (targetItem) {
@@ -207,7 +205,7 @@ function handleInventoryActionDropdownState() {
 dom.invActionSelect.addEventListener('change', handleInventoryActionDropdownState);
 
 window.deleteInventoryItem = function(id) {
-    if (confirm("Are you sure you want to remove this item from the Denlight database?")) {
+    if (confirm("Remove this item from the Denlight database?")) {
         state.inventory = state.inventory.filter(item => item.id !== id);
         localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
         updateInventoryUI();
@@ -215,14 +213,13 @@ window.deleteInventoryItem = function(id) {
     }
 };
 
-// --- Staff UI Directory Synchronizers ---
 function updateStaffUI() {
     dom.staffTableBody.innerHTML = '';
     dom.saleEmployee.innerHTML = '';
 
     if (state.staff.length === 0) {
         dom.saleEmployee.innerHTML = '<option value="">-- No Staff Available --</option>';
-        dom.staffTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-400">No staff registered. Please onboard team members.</td></tr>`;
+        dom.staffTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-400">No staff registered.</td></tr>`;
         return;
     }
 
@@ -238,7 +235,7 @@ function updateStaffUI() {
             <td class="p-3 text-slate-900">${name}</td>
             <td class="p-3 text-right">
                 <button class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded transition border border-rose-200" onclick="deleteStaffMember('${name}')">
-                    🗑️ Remove Employee
+                    🗑️ Remove
                 </button>
             </td>
         `;
@@ -259,7 +256,7 @@ function updateSalesAndExpensesUI() {
     dom.salesTableBody.innerHTML = '';
     state.currentShiftSales.forEach(s => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td class="p-3 font-medium">${s.itemName}</td><td class="p-3 text-gray-600">$${s.soldPrice.toFixed(2)}</td><td class="p-3 text-emerald-600 font-bold">+$${s.profit.toFixed(2)}</td><td class="p-3"><span class="bg-gray-100 text-gray-700 font-medium px-2 py-0.5 rounded text-xs">${s.seller}</span></td>`;
+        row.innerHTML = `<td class="p-3 font-medium break-all">${s.itemName}</td><td class="p-3 text-gray-600">$${s.soldPrice.toFixed(2)}</td><td class="p-3 text-emerald-600 font-bold">+$${s.profit.toFixed(2)}</td><td class="p-3"><span class="bg-gray-100 text-gray-700 font-medium px-2 py-0.5 rounded text-xs">${s.seller}</span></td>`;
         dom.salesTableBody.appendChild(row);
     });
 
@@ -288,14 +285,14 @@ function switchAnalyticsSection(sectionKey) {
     };
     
     Object.keys(buttons).forEach(k => {
-        buttons[k].className = "w-full text-left p-3 rounded-lg font-semibold text-sm border bg-white hover:bg-gray-50 text-gray-700 transition";
+        buttons[k].className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate";
     });
-    dom.anBtnOut.className = "w-full text-left p-3 rounded-lg font-semibold text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center";
+    dom.anBtnOut.className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate";
 
-    if (sectionKey === 'staff') dom.anBtnStaff.className = "w-full text-left p-3 rounded-lg font-bold text-sm border bg-cyan-600 text-white shadow-sm transition";
-    if (sectionKey === 'stock') dom.anBtnStock.className = "w-full text-left p-3 rounded-lg font-bold text-sm border bg-cyan-600 text-white shadow-sm transition";
-    if (sectionKey === 'out') dom.anBtnOut.className = "w-full text-left p-3 rounded-lg font-bold text-sm border bg-red-600 text-white shadow-sm transition flex justify-between items-center";
-    if (sectionKey === 'performance') dom.anBtnPerformance.className = "w-full text-left p-3 rounded-lg font-bold text-sm border bg-cyan-600 text-white shadow-sm transition";
+    if (sectionKey === 'staff') dom.anBtnStaff.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
+    if (sectionKey === 'stock') dom.anBtnStock.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
+    if (sectionKey === 'out') dom.anBtnOut.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-red-600 text-white shadow-sm transition flex justify-between items-center truncate w-full";
+    if (sectionKey === 'performance') dom.anBtnPerformance.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
 
     state.activeAnalyticsSection = sectionKey;
     renderAnalyticsViewport();
@@ -306,11 +303,11 @@ function renderAnalyticsViewport() {
     dom.analyticsTableBody.innerHTML = '';
 
     if (state.activeAnalyticsSection === 'staff') {
-        dom.analyticsPanelTitle.textContent = "Employee Contribution Metrics (Current Shift)";
-        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Employee Name</th><th class="p-3 text-center">Items Sold Volume</th><th class="p-3 text-right">Net Profit Generated</th></tr>`;
+        dom.analyticsPanelTitle.textContent = "Employee Performance (Current Shift)";
+        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Employee Name</th><th class="p-3 text-center">Volume</th><th class="p-3 text-right">Profit</th></tr>`;
         
         if (state.staff.length === 0) {
-            dom.analyticsTableBody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400">No employees registered on staff rosters.</td></tr>`;
+            dom.analyticsTableBody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400">No employees registered.</td></tr>`;
             return;
         }
 
@@ -326,51 +323,51 @@ function renderAnalyticsViewport() {
     }
     
     else if (state.activeAnalyticsSection === 'stock') {
-        dom.analyticsPanelTitle.textContent = "Warehouse Stock Levels Balance Ledger";
-        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-right">Available Qty</th><th class="p-3 text-center">Status Badge</th></tr>`;
+        dom.analyticsPanelTitle.textContent = "Warehouse Stock Levels Ledger";
+        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-right">Qty</th><th class="p-3 text-center">Status</th></tr>`;
         
         state.inventory.forEach(item => {
-            let statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-bold">Healthy Stock</span>`;
-            if (item.qty === 0) statusBadge = `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded font-bold">Out of Stock</span>`;
-            else if (item.qty < 5) statusBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">Low Warning</span>`;
+            let statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-bold">Good</span>`;
+            if (item.qty === 0) statusBadge = `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded font-bold">Empty</span>`;
+            else if (item.qty < 5) statusBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">Low</span>`;
 
             const row = document.createElement('tr');
-            row.innerHTML = `<td class="p-3 font-semibold text-gray-800">${item.name}</td><td class="p-3 text-right font-black">${item.qty} units</td><td class="p-3 text-center">${statusBadge}</td>`;
+            row.innerHTML = `<td class="p-3 font-semibold text-gray-800 break-all">${item.name}</td><td class="p-3 text-right font-black">${item.qty} u</td><td class="p-3 text-center">${statusBadge}</td>`;
             dom.analyticsTableBody.appendChild(row);
         });
     }
 
     else if (state.activeAnalyticsSection === 'out') {
-        dom.analyticsPanelTitle.textContent = "Urgent Stock Replenishment Critical Logs (Zero Inventory)";
-        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3">Base Cost Price</th><th class="p-3 text-center">Action Status</th></tr>`;
+        dom.analyticsPanelTitle.textContent = "Urgent Stock Replenishment Critical Logs";
+        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-right">Cost</th><th class="p-3 text-center">Status</th></tr>`;
         
         const outOfStockItems = state.inventory.filter(item => parseInt(item.qty) === 0);
         if (outOfStockItems.length === 0) {
-            dom.analyticsTableBody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-medium">✓ Perfect operational threshold. No items are currently out of stock.</td></tr>`;
+            dom.analyticsTableBody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 font-medium">✓ Stock levels healthy.</td></tr>`;
         } else {
             outOfStockItems.forEach(item => {
                 const row = document.createElement('tr');
                 row.className = "bg-rose-50/40";
-                row.innerHTML = `<td class="p-3 font-bold text-rose-900">${item.name}</td><td class="p-3 text-gray-600">$${item.buyingPrice.toFixed(2)}</td><td class="p-3 text-center"><span class="text-rose-700 bg-rose-100 px-2 py-1 rounded text-xs font-bold tracking-wide">REORDER REQ</span></td>`;
+                row.innerHTML = `<td class="p-3 font-bold text-rose-900 break-all">${item.name}</td><td class="p-3 text-right text-gray-600">$${item.buyingPrice.toFixed(2)}</td><td class="p-3 text-center"><span class="text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded text-xs font-bold whitespace-nowrap">OUT</span></td>`;
                 dom.analyticsTableBody.appendChild(row);
             });
         }
     }
 
     else if (state.activeAnalyticsSection === 'performance') {
-        dom.analyticsPanelTitle.textContent = "Product Performance Velocity Ranking (All-Time Volume)";
-        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-center">All-Time Units Sold</th><th class="p-3 text-center">Velocity Rank Label</th></tr>`;
+        dom.analyticsPanelTitle.textContent = "All-Time Product Sales Volumes";
+        dom.analyticsTableHead.innerHTML = `<tr><th class="p-3">Product Name</th><th class="p-3 text-center">Units Sold</th><th class="p-3 text-center">Rank</th></tr>`;
         
         let sortedItems = [...state.inventory].sort((a, b) => (b.soldVolume || 0) - (a.soldVolume || 0));
         
         sortedItems.forEach((item, index) => {
             const volume = item.soldVolume || 0;
-            let rankingBadge = `<span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-medium">Standard Velocity</span>`;
-            if (index === 0 && volume > 0) rankingBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-black">🔥 High Seller Leader</span>`;
-            else if (index === sortedItems.length - 1 || volume === 0) rankingBadge = `<span class="bg-gray-100 text-gray-400 text-xs px-2 py-0.5 rounded font-normal">Low Velocity</span>`;
+            let rankingBadge = `<span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-medium">Mid</span>`;
+            if (index === 0 && volume > 0) rankingBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-black whitespace-nowrap">🔥 High</span>`;
+            else if (index === sortedItems.length - 1 || volume === 0) rankingBadge = `<span class="bg-gray-100 text-gray-400 text-xs px-2 py-0.5 rounded font-normal whitespace-nowrap">Low</span>`;
 
             const row = document.createElement('tr');
-            row.innerHTML = `<td class="p-3 font-semibold text-gray-800">${item.name}</td><td class="p-3 text-center font-bold text-slate-900">${volume} sold</td><td class="p-3 text-center">${rankingBadge}</td>`;
+            row.innerHTML = `<td class="p-3 font-semibold text-gray-800 break-all">${item.name}</td><td class="p-3 text-center font-bold text-slate-900">${volume} sold</td><td class="p-3 text-center">${rankingBadge}</td>`;
             dom.analyticsTableBody.appendChild(row);
         });
     }
@@ -415,7 +412,6 @@ function setShiftSystemState(active) {
     }
 }
 
-// Fixed Inventory Save Submission Block Routing
 dom.inventoryForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const actionValue = dom.invActionSelect.value;
@@ -423,7 +419,6 @@ dom.inventoryForm.addEventListener('submit', (e) => {
     const inputQty = parseInt(dom.invQty.value);
 
     if (actionValue === 'NEW') {
-        // Handle onboarding brand new items
         const newItem = {
             id: Date.now().toString(),
             name: dom.invName.value.trim(),
@@ -433,11 +428,10 @@ dom.inventoryForm.addEventListener('submit', (e) => {
         };
         state.inventory.push(newItem);
     } else {
-        // Bug Fixed: Restock an item already registered by adding to its quantity
         const index = state.inventory.findIndex(i => i.id === actionValue);
         if (index !== -1) {
             state.inventory[index].qty += inputQty;
-            state.inventory[index].buyingPrice = inputPrice; // update with latest buy price
+            state.inventory[index].buyingPrice = inputPrice;
         }
     }
 
@@ -448,13 +442,12 @@ dom.inventoryForm.addEventListener('submit', (e) => {
     handleInventoryActionDropdownState();
 });
 
-// Staff Input Form Event Form Listener
 dom.staffForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const cleanName = dom.staffName.value.trim();
     
     if (state.staff.includes(cleanName)) {
-        alert("This employee name already exists within the system rosters.");
+        alert("This employee name already exists.");
         return;
     }
 
@@ -474,7 +467,7 @@ dom.salesForm.addEventListener('submit', (e) => {
     const sellerName = dom.saleEmployee.value;
 
     if (!sellerName) {
-        alert("Please assign an attending employee before submitting transactions.");
+        alert("Please assign an attending employee.");
         return;
     }
 
@@ -542,7 +535,7 @@ dom.btnClockOut.addEventListener('click', () => {
 });
 
 dom.btnMasterReset.addEventListener('click', () => {
-    if (confirm("Warning: This will wipe out all temporary sales logs and restore base parameters. Proceed?")) {
+    if (confirm("Warning: This will wipe out all session metrics. Proceed?")) {
         localStorage.removeItem('denlight_inventory');
         localStorage.removeItem('denlight_staff');
         

@@ -1,25 +1,48 @@
-/* Core View Control Optimization Mechanics */
+/* ==========================================================================
+   Denlight Enterprise System - Custom Stylesheet Modifiers
+   ========================================================================== */
+
+/* 1. Smooth Viewport Fade Transitions */
 .tab-view {
     animation: fadeIn 0.2s ease-in-out;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { 
+        opacity: 0; 
+        transform: translateY(3px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
 }
 
-/* Scroll handling architectures for warehouse tables */
+/* 2. Mobile Responsive Touch Inertia Scrolling */
+.overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 3. Global Elegant Scrollbar Customizations */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-    background: #f1f5f9; 
+    background: #f1f5f9; /* Tailwind slate-100 */
 }
+
 ::-webkit-scrollbar-thumb {
-    background: #cbd5e1; 
+    background: #cbd5e1; /* Tailwind slate-300 */
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8; 
+    background: #94a3b8; /* Tailwind slate-400 */
+}
+
+/* 4. Active Tap Highlight Prevention for Mobile Browsers */
+button, select, input {
+    -webkit-tap-highlight-color: transparent;
 }
