@@ -1,21 +1,9 @@
 /**
  * Denlight - Secure Enterprise Dashboard Storage Engine Architecture
+ * Full Corrected Application Core Logic
  */
 
-// --- Persistent Application Engine LocalStorage Defaults ---
-function getInitialInventory() {
-    return [
-        { id: "1", name: "Anker USB-C Hub", buyingPrice: 15.00, qty: 25, soldVolume: 0 },
-        { id: "2", name: "Logitech MX Master 3S", buyingPrice: 65.00, qty: 10, soldVolume: 0 },
-        { id: "3", name: "iPhone 15 Matte Case", buyingPrice: 4.50, qty: 50, soldVolume: 0 }
-    ];
-}
-
-/**
- * Denlight - Advanced Enterprise Dashboard Storage Engine Architecture
- */
-
-// --- Persistent Application Engine LocalStorage Defaults ---
+// --- Persistent Application Engine Base Configurations ---
 function getInitialInventory() {
     return [
         { id: "1", name: "Anker USB-C Hub", buyingPrice: 15.00, qty: 25, soldVolume: 0 },
@@ -25,38 +13,17 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    return ["Ken", "Kate", "Ryan", "Faith"];
+    return ["Alex", "Jordan", "Taylor", "Morgan"];
 }
 
-// Fixed Security Bootstrapping: Auto-generates exact SHA-256 alignment
-if (!localStorage.getItem('denlight_inventory')) {
-    localStorage.setItem('denlight_inventory', JSON.stringify(getInitialInventory()));
-}
-if (!localStorage.getItem('denlight_staff')) {
-    localStorage.setItem('denlight_staff', JSON.stringify(getInitialStaff()));
-}
+const DEFAULT_PASSWORD_PLAIN = "denlight2026";
 
-// Crypto Utility Function needed upfront for bootstrapping
-async function generateSHA256(plainText) {
-    const msgBuffer = new TextEncoder().encode(plainText);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Dynamically sets standard 'denlight2026' password safely based on your browser environment
-(async () => {
-    if (!localStorage.getItem('denlight_secure_hash')) {
-        const defaultHash = await generateSHA256("deenlight2026");
-        localStorage.setItem('denlight_secure_hash', defaultHash);
-    }
-})();
-
-// --- Global Application Data Runtime States ---
+// --- Global Application Data Runtime State ---
 let state = {
-    inventory: JSON.parse(localStorage.getItem('denlight_inventory')),
-    staff: JSON.parse(localStorage.getItem('denlight_staff')),
+    inventory: [],
+    staff: [],
     currentUser: null,
+    isShiftActive: false,
     
     // Shift Data Bucket Vectors
     currentShiftSales: [],
@@ -159,22 +126,7 @@ function switchMainTab(tabKey) {
     if (tabKey === 'overview') renderAnalyticsViewport();
 }
 
-Object.keys(dom.tabs).forEach(k => {
-    dom.tabs[k].addEventListener('click', () => switchMainTab(k));
-});
-
-dom.expType.addEventListener('change', () => {
-    if (dom.expType.value === 'Other') {
-        dom.expCustomContainer.classList.remove('hidden');
-        dom.expCustomDesc.required = true;
-    } else {
-        dom.expCustomContainer.classList.add('hidden');
-        dom.expCustomDesc.required = false;
-    }
-});
-
 // --- Dynamic Table Data Rendering Pipelines ---
-
 function updateInventoryUI() {
     dom.inventoryTableBody.innerHTML = '';
     dom.saleItemSelect.innerHTML = '<option value="">-- Choose Stock --</option>';
@@ -238,7 +190,6 @@ function handleInventoryActionDropdownState() {
         }
     }
 }
-dom.invActionSelect.addEventListener('change', handleInventoryActionDropdownState);
 
 window.deleteInventoryItem = function(id) {
     if (confirm("Remove this item from the Denlight database?")) {
@@ -304,20 +255,6 @@ function updateSalesAndExpensesUI() {
 }
 
 // --- Analytics Viewport Engine ---
-function switchAnalyticsSection(sectionKey) {
-    const buttons = { staff: dom.anBtnStaff, stock: dom.anBtnStock, out: dom.anBtnOut, performance: dom.anBtnPerformance };
-    Object.keys(buttons).forEach(k => { buttons[k].className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate"; });
-    dom.anBtnOut.className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate";
-
-    if (sectionKey === 'staff') dom.anBtnStaff.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
-    if (sectionKey === 'stock') dom.anBtnStock.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
-    if (sectionKey === 'out') dom.anBtnOut.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-red-600 text-white shadow-sm transition flex justify-between items-center truncate w-full";
-    if (sectionKey === 'performance') dom.anBtnPerformance.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
-
-    state.activeAnalyticsSection = sectionKey;
-    renderAnalyticsViewport();
-}
-
 function renderAnalyticsViewport() {
     dom.analyticsTableHead.innerHTML = '';
     dom.analyticsTableBody.innerHTML = '';
@@ -376,29 +313,29 @@ function renderAnalyticsViewport() {
     }
 }
 
+// --- Dynamic Event Wiring Pipelines ---
+dom.invActionSelect.addEventListener('change', handleInventoryActionDropdownState);
 dom.anBtnStaff.addEventListener('click', () => switchAnalyticsSection('staff'));
 dom.anBtnStock.addEventListener('click', () => switchAnalyticsSection('stock'));
 dom.anBtnOut.addEventListener('click', () => switchAnalyticsSection('out'));
 dom.anBtnPerformance.addEventListener('click', () => switchAnalyticsSection('performance'));
 
-// --- Authentication Engine Flow Logic Listeners ---
-
+// --- Authentication Engine Flow Logic ---
 dom.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     dom.loginError.classList.add('hidden');
     
     const userSelected = dom.loginUsername.value;
-    const plainPasswordInput = dom.loginPassword.value;
+    const plainPasswordInput = dom.loginPassword.value.trim(); // Trim spaces/typos
     
-    // Hash the input to check against master hash criteria vectors
+    // Explicitly await the hash computation
     const inputHash = await generateSHA256(plainPasswordInput);
     const targetMasterHash = localStorage.getItem('denlight_secure_hash');
 
     if (inputHash === targetMasterHash) {
-        // Authenticated. Initialize active shift states.
+        // Clear session settings state parameters
         state.currentUser = userSelected;
         state.isShiftActive = true;
-        
         state.currentShiftSales = [];
         state.currentShiftExpenses = [];
         state.currentSalesProfitTotal = 0.00;
@@ -408,7 +345,7 @@ dom.loginForm.addEventListener('submit', async (e) => {
         dom.activeUserBadge.textContent = `User: ${state.currentUser}`;
         dom.loginPassword.value = "";
         
-        // Toggle view visibility panels
+        // Hide access portal wall, render workspace viewport layouts
         dom.loginWall.classList.add('hidden');
         dom.appWorkspace.classList.remove('hidden');
         dom.appWorkspace.classList.add('flex');
@@ -416,11 +353,17 @@ dom.loginForm.addEventListener('submit', async (e) => {
         updateSalesAndExpensesUI();
         switchMainTab('sales');
     } else {
+        // Requirement 7: Clear console debugging diagnostics for tracking mismatches
+        console.error("Denlight Auth Failure:\n" + 
+                      `Attempted User: ${userSelected}\n` +
+                      `Input Hash:     ${inputHash}\n` +
+                      `Expected Hash:  ${targetMasterHash}`);
+                      
         dom.loginError.classList.remove('hidden');
+        dom.loginPassword.value = "";
     }
 });
 
-// Clock Out Session Settlement Event Listener
 dom.btnClockOut.addEventListener('click', () => {
     if (!state.isShiftActive) return;
     
@@ -428,7 +371,6 @@ dom.btnClockOut.addEventListener('click', () => {
         state.isShiftActive = false;
         state.currentUser = null;
         
-        // Hide application engine workspace view layers, bounce straight back to login screen lock
         dom.appWorkspace.classList.add('hidden');
         dom.appWorkspace.classList.remove('flex');
         dom.loginWall.classList.remove('hidden');
@@ -436,13 +378,12 @@ dom.btnClockOut.addEventListener('click', () => {
     }
 });
 
-// Security Admin Override Form Submission Event Hook
 dom.securityForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const newPlaintextPass = dom.secNewPass.value;
+    const newPlaintextPass = dom.secNewPass.value.trim();
     
     if (newPlaintextPass.length < 6) {
-        alert("For safety reasons, make sure the shop password is at least 6 characters long.");
+        alert("The shop password must be at least 6 characters long.");
         return;
     }
 
@@ -450,11 +391,10 @@ dom.securityForm.addEventListener('submit', async (e) => {
     localStorage.setItem('denlight_secure_hash', encryptedHash);
     
     dom.secNewPass.value = "";
-    alert("Master Security Access Password Updated Successfully!");
+    alert("Master Security Access Password Updated!");
 });
 
-// --- Standard Data Mutators Logic ---
-
+// --- Standard Inventory & Operational Form Handlers ---
 dom.inventoryForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const actionValue = dom.invActionSelect.value;
@@ -526,34 +466,51 @@ dom.expenseForm.addEventListener('submit', (e) => {
 });
 
 dom.btnMasterReset.addEventListener('click', () => {
-    if (confirm("Warning: This will wipe out all temporary parameters. Proceed?")) {
+    if (confirm("Warning: This will wipe out all temporary local storage keys. Proceed?")) {
         localStorage.clear();
-        state.inventory = getInitialInventory();
-        state.staff = getInitialStaff();
-        localStorage.setItem('denlight_inventory', JSON.stringify(state.inventory));
-        localStorage.setItem('denlight_staff', JSON.stringify(state.staff));
-        localStorage.setItem('denlight_secure_hash', DEFAULT_PASSWORD_HASH);
-        
-        state.currentShiftSales = [];
-        state.currentShiftExpenses = [];
-        state.currentSalesProfitTotal = 0.00;
-        state.currentExpensesTotal = 0.00;
-        state.currentNetProfitTotal = 0.00;
-        state.currentUser = null;
-        state.isShiftActive = false;
-
-        updateInventoryUI();
-        updateStaffAndLoginUI();
-        updateSalesAndExpensesUI();
-        
-        dom.appWorkspace.classList.add('hidden');
-        dom.loginWall.classList.remove('hidden');
-        dom.loginError.classList.add('hidden');
-        alert("System Restored to Baseline Trial Parameters successfully!");
+        initializeApplication();
     }
 });
 
-// --- System Initialization Bootstrapping ---
-updateInventoryUI();
-updateStaffAndLoginUI();
-updateSalesAndExpensesUI();
+// --- Secure Application Initialization Bootloader ---
+async function initializeApplication() {
+    // 1. Establish data defaults if storage parameters are missing
+    if (!localStorage.getItem('denlight_inventory')) {
+        localStorage.setItem('denlight_inventory', JSON.stringify(getInitialInventory()));
+    }
+    if (!localStorage.getItem('denlight_staff')) {
+        localStorage.setItem('denlight_staff', JSON.stringify(getInitialStaff()));
+    }
+    
+    // 2. Requirement 3: Guarantee secure access hash setup sequentially
+    if (!localStorage.getItem('denlight_secure_hash')) {
+        const defaultHash = await generateSHA256(DEFAULT_PASSWORD_PLAIN);
+        localStorage.setItem('denlight_secure_hash', defaultHash);
+    }
+
+    // 3. Populate state structures out of confirmed storage layers
+    state.inventory = JSON.parse(localStorage.getItem('denlight_inventory'));
+    state.staff = JSON.parse(localStorage.getItem('denlight_staff'));
+    
+    state.currentUser = null;
+    state.isShiftActive = false;
+
+    // 4. Paint rendering elements onto layout interfaces
+    Object.keys(dom.tabs).forEach(k => dom.tabs[k].className = "tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block");
+    dom.tabs['sales'].className = "tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition inline-block";
+    
+    updateInventoryUI();
+    updateStaffAndLoginUI();
+    updateSalesAndExpensesUI();
+    switchAnalyticsSection('staff');
+
+    // Force system status presentation vectors back to secure wall state
+    dom.appWorkspace.classList.add('hidden');
+    dom.loginWall.classList.remove('hidden');
+    dom.loginError.classList.add('hidden');
+    
+    console.log("Denlight Security Engine: Securely Bootstrapped.");
+}
+
+// Fire Bootloader
+initializeApplication();
