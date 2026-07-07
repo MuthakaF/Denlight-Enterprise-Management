@@ -12,7 +12,7 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    return ["Alex", "Jordan", "Taylor", "Morgan"];
+    return ["Kate", "Ken", "Ryan", "Faith"];
 }
 
 // Default Password Hash Value for "denlight2026"
