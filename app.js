@@ -47,7 +47,7 @@ async function generateSHA256(plainText) {
 // Dynamically sets standard 'denlight2026' password safely based on your browser environment
 (async () => {
     if (!localStorage.getItem('denlight_secure_hash')) {
-        const defaultHash = await generateSHA256("denlight2026");
+        const defaultHash = await generateSHA256("deenlight2026");
         localStorage.setItem('denlight_secure_hash', defaultHash);
     }
 })();
