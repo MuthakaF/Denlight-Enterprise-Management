@@ -13,7 +13,7 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    return ["Alex", "Jordan", "Taylor", "Morgan"];
+    return ["Ken", "Kate", "Ryan", "Faith"];
 }
 
 const DEFAULT_PASSWORD_PLAIN = "denlight2026";
