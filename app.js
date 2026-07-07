@@ -1,5 +1,5 @@
 /**
- * Denlight - Secure Enterprise Dashboard Storage Engine Architecture
+ * Denlight - Advanced Enterprise Dashboard Storage Engine Architecture
  * Full Corrected Application Core Logic
  */
 
@@ -13,7 +13,7 @@ function getInitialInventory() {
 }
 
 function getInitialStaff() {
-    return ["Ken", "Kate", "Ryan", "Faith"];
+    return ["Alex", "Jordan", "Taylor", "Morgan"];
 }
 
 const DEFAULT_PASSWORD_PLAIN = "denlight2026";
@@ -255,6 +255,20 @@ function updateSalesAndExpensesUI() {
 }
 
 // --- Analytics Viewport Engine ---
+function switchAnalyticsSection(sectionKey) {
+    const buttons = { staff: dom.anBtnStaff, stock: dom.anBtnStock, out: dom.anBtnOut, performance: dom.anBtnPerformance };
+    Object.keys(buttons).forEach(k => { buttons[k].className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-gray-700 transition truncate"; });
+    dom.anBtnOut.className = "text-left p-3 rounded-lg font-semibold text-xs sm:text-sm border bg-white hover:bg-gray-50 text-red-600 transition flex justify-between items-center truncate";
+
+    if (sectionKey === 'staff') dom.anBtnStaff.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
+    if (sectionKey === 'stock') dom.anBtnStock.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
+    if (sectionKey === 'out') dom.anBtnOut.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-red-600 text-white shadow-sm transition flex justify-between items-center truncate w-full";
+    if (sectionKey === 'performance') dom.anBtnPerformance.className = "text-left p-3 rounded-lg font-bold text-xs sm:text-sm border bg-cyan-600 text-white shadow-sm transition truncate w-full";
+
+    state.activeAnalyticsSection = sectionKey;
+    renderAnalyticsViewport();
+}
+
 function renderAnalyticsViewport() {
     dom.analyticsTableHead.innerHTML = '';
     dom.analyticsTableBody.innerHTML = '';
@@ -314,7 +328,21 @@ function renderAnalyticsViewport() {
 }
 
 // --- Dynamic Event Wiring Pipelines ---
-dom.invActionSelect.addEventListener('change', handleInventoryActionDropdownState);
+dom.expType.addEventListener('change', () => {
+    if (dom.expType.value === 'Other') {
+        dom.expCustomContainer.classList.remove('hidden');
+        dom.expCustomDesc.required = true;
+    } else {
+        dom.expCustomContainer.classList.add('hidden');
+        dom.expCustomDesc.required = false;
+    }
+});
+
+// FIXED: Explicitly maps the structural switch triggers to each tab button click
+Object.keys(dom.tabs).forEach(key => {
+    dom.tabs[key].addEventListener('click', () => switchMainTab(key));
+});
+
 dom.anBtnStaff.addEventListener('click', () => switchAnalyticsSection('staff'));
 dom.anBtnStock.addEventListener('click', () => switchAnalyticsSection('stock'));
 dom.anBtnOut.addEventListener('click', () => switchAnalyticsSection('out'));
@@ -326,14 +354,12 @@ dom.loginForm.addEventListener('submit', async (e) => {
     dom.loginError.classList.add('hidden');
     
     const userSelected = dom.loginUsername.value;
-    const plainPasswordInput = dom.loginPassword.value.trim(); // Trim spaces/typos
+    const plainPasswordInput = dom.loginPassword.value.trim();
     
-    // Explicitly await the hash computation
     const inputHash = await generateSHA256(plainPasswordInput);
     const targetMasterHash = localStorage.getItem('denlight_secure_hash');
 
     if (inputHash === targetMasterHash) {
-        // Clear session settings state parameters
         state.currentUser = userSelected;
         state.isShiftActive = true;
         state.currentShiftSales = [];
@@ -345,7 +371,6 @@ dom.loginForm.addEventListener('submit', async (e) => {
         dom.activeUserBadge.textContent = `User: ${state.currentUser}`;
         dom.loginPassword.value = "";
         
-        // Hide access portal wall, render workspace viewport layouts
         dom.loginWall.classList.add('hidden');
         dom.appWorkspace.classList.remove('hidden');
         dom.appWorkspace.classList.add('flex');
@@ -353,7 +378,6 @@ dom.loginForm.addEventListener('submit', async (e) => {
         updateSalesAndExpensesUI();
         switchMainTab('sales');
     } else {
-        // Requirement 7: Clear console debugging diagnostics for tracking mismatches
         console.error("Denlight Auth Failure:\n" + 
                       `Attempted User: ${userSelected}\n` +
                       `Input Hash:     ${inputHash}\n` +
@@ -474,37 +498,28 @@ dom.btnMasterReset.addEventListener('click', () => {
 
 // --- Secure Application Initialization Bootloader ---
 async function initializeApplication() {
-    // 1. Establish data defaults if storage parameters are missing
     if (!localStorage.getItem('denlight_inventory')) {
         localStorage.setItem('denlight_inventory', JSON.stringify(getInitialInventory()));
     }
     if (!localStorage.getItem('denlight_staff')) {
         localStorage.setItem('denlight_staff', JSON.stringify(getInitialStaff()));
     }
-    
-    // 2. Requirement 3: Guarantee secure access hash setup sequentially
     if (!localStorage.getItem('denlight_secure_hash')) {
         const defaultHash = await generateSHA256(DEFAULT_PASSWORD_PLAIN);
         localStorage.setItem('denlight_secure_hash', defaultHash);
     }
 
-    // 3. Populate state structures out of confirmed storage layers
     state.inventory = JSON.parse(localStorage.getItem('denlight_inventory'));
     state.staff = JSON.parse(localStorage.getItem('denlight_staff'));
     
     state.currentUser = null;
     state.isShiftActive = false;
 
-    // 4. Paint rendering elements onto layout interfaces
-    Object.keys(dom.tabs).forEach(k => dom.tabs[k].className = "tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block");
-    dom.tabs['sales'].className = "tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition inline-block";
-    
     updateInventoryUI();
     updateStaffAndLoginUI();
     updateSalesAndExpensesUI();
     switchAnalyticsSection('staff');
 
-    // Force system status presentation vectors back to secure wall state
     dom.appWorkspace.classList.add('hidden');
     dom.loginWall.classList.remove('hidden');
     dom.loginError.classList.add('hidden');
