@@ -4,22 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Denlight - Secured Enterprise Hub</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen font-sans flex flex-col antialiased">
 
-    <!-- LOGIN PORTAL ACCESS SCREEN -->
     <div id="login-wall" class="fixed inset-0 bg-slate-900 z-[9999] flex items-center justify-center p-4">
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-100 w-full max-w-md space-y-6">
             <div class="text-center">
                 <h1 class="text-3xl font-black tracking-wider text-slate-900">DENLIGHT</h1>
-                <p class="text-xs text-cyan-600 font-bold uppercase tracking-widest mt-1">Enterprise Authentication</p>
+                <p id="auth-subtitle" class="text-xs text-cyan-600 font-bold uppercase tracking-widest mt-1">Employee Shift Clock In</p>
             </div>
 
-            <div id="login-error" class="hidden bg-rose-50 text-rose-700 text-xs font-semibold p-3 rounded-lg border border-rose-100 text-center">
-                ❌ Invalid credentials provided. Please try again.
-            </div>
+            <div id="auth-error" class="hidden bg-rose-50 text-rose-700 text-xs font-semibold p-3 rounded-lg border border-rose-100 text-center"></div>
 
             <form id="login-form" class="space-y-4">
                 <div>
@@ -30,20 +26,25 @@
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Access Password</label>
                     <input type="password" id="login-password" placeholder="••••••••" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" required>
                 </div>
-                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-3 rounded-xl transition text-sm shadow-md">
-                    Verify Credentials & Clock In
+                
+                <button type="submit" id="btn-auth-submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-3 rounded-xl transition text-sm shadow-md">
+                    Verify & Clock In
                 </button>
             </form>
+
+            <div class="text-center border-t pt-4">
+                <button id="btn-toggle-auth-mode" class="text-xs text-slate-500 hover:text-cyan-600 font-semibold transition focus:outline-none">
+                    First time logging in? Create your password profile →
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- MAIN APPLICATIONS ACTIVE WORKSPACE -->
     <div id="app-workspace" class="hidden flex-col min-h-screen">
         <header class="bg-slate-900 text-white p-4 shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex flex-col items-center sm:items-start text-center sm:text-left w-full sm:w-auto">
                 <h1 class="text-2xl font-bold tracking-wider text-cyan-400">DENLIGHT</h1>
                 <p class="text-xs text-slate-400">Enterprise Sales & Inventory Ecosystem</p>
-                <!-- Master Reset Switch: Rendered solely if Ken is logged in -->
                 <button id="btn-master-reset" class="hidden mt-2 bg-slate-800 hover:bg-rose-900 hover:text-white border border-slate-700 text-slate-400 text-xs px-3 py-1 rounded transition font-medium w-full sm:w-auto">
                     ⚠️ DANGER: Reset Master Enterprise Databases
                 </button>
@@ -60,7 +61,6 @@
             </div>
         </header>
 
-        <!-- Dashboard Core Navigation Tabs -->
         <div class="bg-white border-b border-gray-200 shadow-sm overflow-x-auto whitespace-nowrap sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 flex space-x-4 sm:space-x-8">
                 <button id="tab-sales" class="tab-btn py-4 px-1 border-b-2 border-cyan-500 text-cyan-600 font-bold text-xs sm:text-sm focus:outline-none transition">
@@ -70,7 +70,7 @@
                     📦 Stock Room
                 </button>
                 <button id="tab-staff" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition">
-                    👥 Staff & Security
+                    👥 Staff & Profiles
                 </button>
                 <button id="tab-overview" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition">
                     📊 Analytics Engine
@@ -78,10 +78,8 @@
             </div>
         </div>
 
-        <!-- Main Workspace Viewport Router -->
         <main class="p-4 sm:p-6 max-w-7xl mx-auto w-full flex-grow">
             
-            <!-- SECTION 1: SALES & EXPENSES VIEW -->
             <div id="view-sales" class="tab-view space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 space-y-6">
@@ -162,13 +160,11 @@
                 </div>
             </div>
 
-            <!-- SECTION 2: STOCK DATABASE MANAGEMENT VIEW -->
             <div id="view-inventory" class="tab-view hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1">
-                        <!-- Admin Warning Locker Message Overlay elements -->
                         <div id="inventory-lock-notice" class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-900 text-xs font-medium mb-3 hidden">
-                            🔒 Admin Authorization Required: Only **Ken** can create items or change buying prices.
+                            🔒 Clearance Restricted: Only **Ken** or **Kate** can run stock room entries and modifications.
                         </div>
 
                         <section id="inventory-control-box" class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
@@ -187,7 +183,6 @@
                                 <div>
                                     <label class="block text-xs font-bold text-gray-600 mb-1">Base Buying Cost ($)</label>
                                     <input type="number" id="inv-buying-price" step="0.01" min="0" placeholder="Cost price to shop" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
-                                    <span class="text-[10px] text-slate-400 mt-1 block">Altering this updates profit bounds going forward only.</span>
                                 </div>
                                 <div>
                                     <label id="inv-qty-label" class="block text-xs font-bold text-gray-600 mb-1">Initial Stock Quantity</label>
@@ -219,45 +214,30 @@
                 </div>
             </div>
 
-            <!-- SECTION 3: STAFF & MASTER SECURITY MANAGEMENT -->
             <div id="view-staff" class="tab-view hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-1 space-y-4">
-                        <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-rose-200 bg-rose-50/20">
-                            <h2 class="text-base sm:text-lg font-bold text-rose-950 mb-1">🛡️ Owner Security Settings</h2>
-                            <p class="text-xs text-rose-700 mb-4">Update the system lock code used by employees during login checks.</p>
-                            
-                            <form id="security-form" class="space-y-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-rose-900 mb-1">New Shop Access Password</label>
-                                    <input type="password" id="sec-new-pass" placeholder="Enter new password" class="w-full p-2.5 sm:p-2 border rounded-xl text-sm bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
-                                </div>
-                                <button type="submit" class="w-full bg-rose-800 hover:bg-rose-700 text-white p-2.5 sm:p-2 rounded-xl text-sm font-bold transition shadow-sm">
-                                    Update Security Key
-                                </button>
-                            </form>
-                        </section>
-
+                    <div class="lg:col-span-1">
                         <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Onboard New Employee</h2>
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Onboard New Team Profile</h2>
                             <form id="staff-form" class="space-y-3">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-600 mb-1">Full Name</label>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Employee Full Name</label>
                                     <input type="text" id="staff-name" placeholder="e.g. Sarah Jenkins" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
                                 </div>
-                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Add to Active Staff</button>
+                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Add to System Directory</button>
                             </form>
                         </section>
                     </div>
                     
                     <div class="lg:col-span-2">
                         <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active Shop Staff Directory</h2>
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active System Directory</h2>
                             <div class="overflow-x-auto border border-gray-100 rounded-lg">
                                 <table class="w-full text-left border-collapse text-sm">
                                     <thead class="bg-slate-100 text-gray-700 font-semibold border-b">
                                         <tr>
-                                            <th class="p-3">Employee Name</th>
+                                            <th class="p-3">Employee Profile</th>
+                                            <th class="p-3 text-center">Password Setup State</th>
                                             <th class="p-3 text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -269,11 +249,9 @@
                 </div>
             </div>
 
-            <!-- SECTION 4: ANALYTICS ENGINE VIEW -->
             <div id="view-overview" class="tab-view hidden space-y-6">
-                
                 <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active Live Shift Metrics</h2>
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active Shift Performance Summary</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="p-4 bg-slate-50 border rounded-lg">
                             <span class="text-xs font-bold text-slate-500 uppercase">Gross Sales Profit</span>
@@ -318,7 +296,6 @@
         </main>
     </div>
 
-    <!-- Interactive script module engine link -->
     <script src="app.js"></script>
 </body>
 </html>
