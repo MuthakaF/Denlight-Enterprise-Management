@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Denlight - Secured Enterprise Hub</title>
+    <title>Denlight - Secured Email Enterprise Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen font-sans flex flex-col antialiased">
@@ -13,8 +13,8 @@
             <div class="text-center">
                 <h1 class="text-3xl font-black tracking-wider text-slate-900">DENLIGHT</h1>
                 <div class="mt-2">
-                    <span id="auth-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700">
-                        Shift Login Mode
+                    <span id="auth-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+                        Checking Email Status...
                     </span>
                 </div>
             </div>
@@ -23,17 +23,16 @@
 
             <form id="login-form" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Select Employee Profile</label>
-                    <select id="login-username" class="w-full p-3 border rounded-xl bg-slate-50 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-none" required>
-                        </select>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Corporate Email Address</label>
+                    <input type="email" id="login-email" placeholder="employee@denlight.com" class="w-full p-3 border rounded-xl bg-slate-50 text-sm font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-none" required>
                 </div>
-                <div>
-                    <label id="password-input-label" class="block text-xs font-bold text-gray-600 uppercase mb-1">Enter Password to Clock In</label>
-                    <input type="password" id="login-password" placeholder="••••••••" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" required>
+                <div id="password-field-container" class="hidden">
+                    <label id="password-input-label" class="block text-xs font-bold text-gray-600 uppercase mb-1">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" class="w-full p-3 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none">
                 </div>
                 
-                <button type="submit" id="btn-auth-submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold p-3 rounded-xl transition text-sm shadow-md">
-                    Verify & Clock In
+                <button type="submit" id="btn-auth-submit" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold p-3 rounded-xl transition text-sm shadow-md">
+                    Proceed
                 </button>
             </form>
         </div>
@@ -45,13 +44,13 @@
                 <h1 class="text-2xl font-bold tracking-wider text-cyan-400">DENLIGHT</h1>
                 <p class="text-xs text-slate-400">Enterprise Sales & Inventory Ecosystem</p>
                 <button id="btn-master-reset" class="hidden mt-2 bg-slate-800 hover:bg-rose-900 hover:text-white border border-slate-700 text-slate-400 text-xs px-3 py-1 rounded transition font-medium w-full sm:w-auto">
-                    🔄 Reset Application Data
+                    ⚠️ DANGER: Reset Master Enterprise Databases
                 </button>
             </div>
             
             <div class="flex items-center justify-between sm:justify-end space-x-4 bg-slate-800 p-2.5 rounded-lg border border-slate-700 w-full sm:w-auto">
                 <div class="text-left sm:text-right">
-                    <span id="active-user-badge" class="block text-xs text-cyan-400 font-bold">User: Loading...</span>
+                    <span id="active-user-badge" class="block text-xs text-cyan-400 font-bold">Email: Loading...</span>
                     <span class="text-xs font-medium text-slate-400">Shift Status: Active</span>
                 </div>
                 <button id="btn-clock-out" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition">
@@ -69,7 +68,7 @@
                     📦 Stock Room
                 </button>
                 <button id="tab-staff" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
-                    👥 Staff Management
+                    👥 Staff Onboarding
                 </button>
                 <button id="tab-overview" class="tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-semibold text-xs sm:text-sm focus:outline-none transition inline-block">
                     📊 Analytics Engine
@@ -215,32 +214,34 @@
 
             <div id="view-staff" class="tab-view hidden space-y-6">
                 <div id="staff-lock-notice" class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-900 text-xs font-medium hidden">
-                    🔒 Administrator Clearance Restricted: Only **Ken** has privileges to access staff directories and add or remove team profiles.
+                    🔒 Onboarding Restricted: Only **Ken** or **Kate** can whitelist new enterprise team emails.
                 </div>
 
                 <div id="staff-workspace-wrapper" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1">
                         <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Onboard New Team Profile</h2>
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Onboard Corporate Email</h2>
                             <form id="staff-form" class="space-y-3">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-600 mb-1">Employee Full Name</label>
-                                    <input type="text" id="staff-name" placeholder="e.g. Sarah Jenkins" class="w-full p-2.5 sm:p-2 border rounded text-sm" required>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Corporate Email Address</label>
+                                    <input type="email" id="staff-email-input" placeholder="name@denlight.com" class="w-full p-2.5 sm:p-2 border rounded text-sm focus:ring-2 focus:ring-cyan-500" required>
                                 </div>
-                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">Add to System Directory</button>
+                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 sm:p-2 rounded text-sm font-bold transition">
+                                    Whitelist & Notify Employee
+                                </button>
                             </form>
                         </section>
                     </div>
                     
                     <div class="lg:col-span-2">
                         <section class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Active System Directory</h2>
+                            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Whitelisted Employee Accounts</h2>
                             <div class="overflow-x-auto border border-gray-100 rounded-lg">
                                 <table class="w-full text-left border-collapse text-sm">
                                     <thead class="bg-slate-100 text-gray-700 font-semibold border-b">
                                         <tr>
-                                            <th class="p-3">Employee Profile</th>
-                                            <th class="p-3 text-center">Password Setup State</th>
+                                            <th class="p-3">Whitelisted Email</th>
+                                            <th class="p-3 text-center">Registration Status</th>
                                             <th class="p-3 text-right">Actions</th>
                                         </tr>
                                     </thead>
