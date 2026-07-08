@@ -13,7 +13,7 @@ function getInitialInventory() {
 
 // Master Admin/Owner Root Configuration Parameters
 const OWNER_EMAIL_1 = "ken@denlight.com";
-const OWNER_EMAIL_2 = "kate@denlight.com";
+const OWNER_EMAIL_2 = "catherinewairimumuthaka@gmail.com";
 
 function getInitialWhitelistedEmails() {
     return [OWNER_EMAIL_1, OWNER_EMAIL_2];
@@ -233,8 +233,8 @@ function updateStaffAndLoginUI() {
 }
 
 window.deleteWhitelistedEmail = function(email) {
-    if (state.currentUser !== OWNER_EMAIL_1) {
-        alert("🔒 Access Denied: Only Ken holds structural admin role to purge Whitelist permissions.");
+    if (state.currentUser !== OWNER_EMAIL_1 && state.currentUser !== OWNER_EMAIL_2) {
+        alert("🔒 Access Denied: Only Ken or Kate holds structural admin role to purge Whitelist permissions.");
         return;
     }
     if (email === OWNER_EMAIL_1 || email === OWNER_EMAIL_2) {
