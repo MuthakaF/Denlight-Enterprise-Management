@@ -14,6 +14,7 @@ function getInitialInventory() {
 // Master Admin/Owner Root Configuration Parameters
 const OWNER_EMAIL_1 = "ken@denlight.com";
 const OWNER_EMAIL_2 = "catherinewairimumuthaka@gmail.com";
+const EMPLOYEE_1 = "faithmuthaka@gmail.com"
 
 function getInitialWhitelistedEmails() {
     return [OWNER_EMAIL_1, OWNER_EMAIL_2];
